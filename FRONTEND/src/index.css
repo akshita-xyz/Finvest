@@ -36,6 +36,22 @@ body {
   overflow-x: hidden;
   cursor: none;
 }
+/* Global dark theme fallback: ensure dark UI if component CSS not loaded */
+body, #root {
+  background: #0b0b0b !important;
+  color: #e5e5e5 !important;
+}
+.sidebar {
+  background: #0a0a0a !important;
+  color: #e5e5e5 !important;
+}
+.sidebar a {
+  color: #e5e5e5 !important;
+}
+.sidebar a:hover {
+  background: #1a1a1a !important;
+  color: #fff !important;
+}
 
 @media (pointer: coarse) {
   body {
@@ -370,9 +386,52 @@ nav {
   box-shadow: 0 8px 32px rgba(200, 255, 0, 0.2);
 }
 
+.dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(11, 11, 11, 0.92), rgba(33, 40, 16, 0.96));
+  border: 1px solid rgba(200, 255, 0, 0.22);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-link:hover,
+.dashboard-link:focus-visible {
+  transform: translateY(-1px);
+  color: #ffffff;
+  border-color: rgba(200, 255, 0, 0.42);
+  box-shadow: 0 16px 36px rgba(200, 255, 0, 0.16);
+  outline: none;
+}
+
+.dashboard-link svg {
+  color: var(--accent);
+}
+
+.dashboard-link__label {
+  font-family: var(--M);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 580px) {
   .nav-links {
     display: none;
+  }
+
+  .dashboard-link {
+    padding: 9px 12px;
+  }
+
+  .dashboard-link__label {
+    font-size: 0.6rem;
   }
 }
 

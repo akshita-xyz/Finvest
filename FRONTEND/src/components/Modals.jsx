@@ -1,6 +1,23 @@
 import React from 'react';
 
 const Modals = ({ activeModal, onClose, onOpenModal }) => {
+  React.useEffect(() => {
+    if (!activeModal) return;
+
+    const handleKeyPress = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      document.body.style.overflow = '';
+    };
+  }, [activeModal, onClose]);
+
   if (!activeModal) return null;
 
   const handleClose = (e) => {
@@ -8,21 +25,6 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
       onClose();
     }
   };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
-  React.useEffect(() => {
-    document.addEventListener('keydown', handleKeyPress);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();

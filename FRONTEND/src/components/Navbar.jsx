@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { LayoutDashboard } from 'lucide-react';
 
 const Navbar = ({ onOpenModal }) => {
   const scrollToTop = (e) => {
@@ -8,8 +10,14 @@ const Navbar = ({ onOpenModal }) => {
 
   return (
     <nav role="navigation" aria-label="Main navigation">
-      <div className="nav-inner">
-        <span className="logo" onClick={scrollToTop}>Risk</span>
+      <div className="nav-inner flex items-center justify-between w-full">
+        <div className="flex items-center gap-6">
+          <span className="logo" onClick={scrollToTop}>Risk</span>
+          <Link to="/dashboard" className="dashboard-link" aria-label="Open dashboard preview">
+            <LayoutDashboard size={20} />
+            <span className="dashboard-link__label">Dashboard Preview</span>
+          </Link>
+        </div>
         <ul className="nav-links" role="list">
           <li><a href="#what">What we do</a></li>
           <li><a href="#gs-section">Get started</a></li>

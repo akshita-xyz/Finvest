@@ -5,6 +5,22 @@ const Cursor = () => {
   const dotRef = useRef(null);
   const requestRef = useRef();
 
+  const updateCursorColor = (y, cur, dot) => {
+    const darkSections = ['#stats', '#mq', '#vp', '#lm-section', '#ctaband'];
+    let onDark = false;
+    darkSections.forEach((id) => {
+      const s = document.querySelector(id);
+      if (!s) return;
+      const r = s.getBoundingClientRect();
+      if (y >= r.top && y <= r.bottom) onDark = true;
+    });
+
+    if (cur && dot) {
+      cur.style.borderColor = onDark ? 'rgba(255,255,255,.65)' : '';
+      dot.style.background = onDark ? '#fff' : '';
+    }
+  };
+
   useEffect(() => {
     let mx = window.innerWidth / 2;
     let my = window.innerHeight / 2;
@@ -18,7 +34,7 @@ const Cursor = () => {
         dotRef.current.style.left = mx + 'px';
         dotRef.current.style.top = my + 'px';
       }
-      updateCursorColor(my);
+      updateCursorColor(my, curRef.current, dotRef.current);
     };
 
     const animateCursor = () => {
@@ -33,9 +49,7 @@ const Cursor = () => {
 
     document.addEventListener('mousemove', onMouseMove);
     requestRef.current = requestAnimationFrame(animateCursor);
-
-    // Initial color check
-    updateCursorColor(my);
+    updateCursorColor(my, curRef.current, dotRef.current);
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove);
@@ -44,7 +58,6 @@ const Cursor = () => {
   }, []);
 
   useEffect(() => {
-    // Add hover effects for interactive elements dynamically
     const handleMouseEnter = (e) => {
       const el = e.target;
       if (el.matches('a, button, .card, .logo, .lm-card, .gs-feat') || el.closest('a, button, .card, .logo, .lm-card, .gs-feat')) {
@@ -65,29 +78,8 @@ const Cursor = () => {
     return () => {
       document.removeEventListener('mouseover', handleMouseEnter);
       document.removeEventListener('mouseout', handleMouseLeave);
-    }
+    };
   }, []);
-
-  const updateCursorColor = (y) => {
-    const darkSections = ['#stats', '#mq', '#vp', '#lm-section', '#ctaband'];
-    let onDark = false;
-    darkSections.forEach((id) => {
-      const s = document.querySelector(id);
-      if (!s) return;
-      const r = s.getBoundingClientRect();
-      const currentScroll = window.scrollY;
-      const absoluteTop = r.top + currentScroll;
-      const absoluteBottom = r.bottom + currentScroll;
-      const absoluteY = y + currentScroll;
-      // Alternatively wait, `y` is clientY. `r.top` is relative to client.
-      if (y >= r.top && y <= r.bottom) onDark = true;
-    });
-
-    if (curRef.current && dotRef.current) {
-      curRef.current.style.borderColor = onDark ? 'rgba(255,255,255,.65)' : '';
-      dotRef.current.style.background = onDark ? '#fff' : '';
-    }
-  };
 
   return (
     <>
