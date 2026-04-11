@@ -5,6 +5,8 @@ import {
   fetchUserProfile,
   updateUserProfileFields,
 } from '../services/userProfileService';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MotionDiv = motion.div;
@@ -21,6 +23,7 @@ import {
   Newspaper,
   ExternalLink,
   Search,
+  ClipboardList,
 } from 'lucide-react';
 import {
   Area,
@@ -604,6 +607,13 @@ function Dashboard() {
           >
             <MessageSquare size={18} aria-hidden /> News Feed
           </a>
+          <Link
+            to="/financial-goals"
+            className="db-nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ClipboardList size={18} /> Financial Goals
+          </Link>
         </nav>
 
         <div className="db-sidebar-market-rail db-sidebar-market-rail--bottom" aria-label="Live market snapshot">

@@ -8,6 +8,7 @@ import SignupPage from './pages/SignupPage';
 import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PersonalizedPortfolioHub from './pages/PersonalizedPortfolioHub';
+import FinancialGoals from './pages/FinancialGoals';
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/financial-goals" element={<FinancialGoals />} />
     </Routes>
   );
 }
