@@ -22,7 +22,7 @@ function formatPrice(n, currency = 'USD') {
   }
 }
 
-export default function RiskCandlestickChart({ symbol }) {
+export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
   const wrapRef = useRef(null);
   const chartRef = useRef(null);
   const candleRef = useRef(null);
@@ -169,16 +169,17 @@ export default function RiskCandlestickChart({ symbol }) {
 
     let cancelled = false;
     const cfg = RISK_CHART_TIMEFRAMES.find((t) => t.id === tfId) || RISK_CHART_TIMEFRAMES[6];
+    const finnhubKey = String(import.meta.env.VITE_FINNHUB_API_KEY || finnhubToken || '').trim();
 
     (async () => {
       setLoading(true);
       setError('');
       try {
-        const data = await fetchYahooChartOHLCV(symbol, cfg.range, cfg.interval);
+        const data = await fetchYahooChartOHLCV(symbol, cfg.range, cfg.interval, finnhubKey);
         if (cancelled) return;
         if (!data) {
           setError(
-            'Could not load OHLC data. Use npm run dev (/__yahoo proxy) or set VITE_BACKEND_URL to your API.'
+            'Could not load chart data. Fixes: run npm run dev or npm run preview (Yahoo /__yahoo proxy), deploy the FINVEST backend and set VITE_BACKEND_URL before build, or use a Finnhub plan that allows /stock/candle and set VITE_FINNHUB_API_KEY.'
           );
           candleRef.current?.setData([]);
           volRef.current?.setData([]);
@@ -196,7 +197,7 @@ export default function RiskCandlestickChart({ symbol }) {
     return () => {
       cancelled = true;
     };
-  }, [symbol, tfId, applyData]);
+  }, [symbol, tfId, applyData, finnhubToken]);
 
   const cur = currencyRef.current;
 

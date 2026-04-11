@@ -35,7 +35,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/financial-goals" element={<FinancialGoals />} />
     </Routes>
   );

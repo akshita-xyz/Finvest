@@ -116,9 +116,99 @@ export function parseYahooOHLCV(json, interval) {
 }
 
 /**
+ * Map UI timeframe to Finnhub stock/candle params (fallback when Yahoo proxy is unavailable).
+ */
+function mapToFinnhubCandleParams(range, interval) {
+  const to = Math.floor(Date.now() / 1000);
+  const day = 86400;
+  const r = String(range || '').toLowerCase();
+  const iv = String(interval || '').toLowerCase();
+
+  if (r === '1d' && iv === '5m') return { from: to - day, to, resolution: '5' };
+  if (r === '5d' && iv === '15m') return { from: to - 5 * day, to, resolution: '15' };
+  if (r === '1mo' && iv === '1h') return { from: to - 31 * day, to, resolution: '60' };
+  if (r === '3mo' && iv === '1d') return { from: to - 95 * day, to, resolution: 'D' };
+  if (r === '6mo' && iv === '1d') return { from: to - 185 * day, to, resolution: 'D' };
+  if (r === 'ytd' && iv === '1d') {
+    const y = new Date();
+    const start = new Date(Date.UTC(y.getUTCFullYear(), 0, 1));
+    return { from: Math.floor(start.getTime() / 1000), to, resolution: 'D' };
+  }
+  if (r === '1y' && iv === '1d') return { from: to - 370 * day, to, resolution: 'D' };
+  if (r === '5y' && iv === '1wk') return { from: to - 5 * 370 * day, to, resolution: 'W' };
+  if (r === 'max' && iv === '1mo') return { from: to - 20 * 365 * day, to, resolution: 'M' };
+  return { from: to - 370 * day, to, resolution: 'D' };
+}
+
+/**
+ * @param {unknown} data Finnhub candle JSON
+ * @param {string} resolution Finnhub resolution e.g. D, 5
+ * @returns {ReturnType<typeof parseYahooOHLCV>}
+ */
+export function parseFinnhubCandlesToOHLCV(data, resolution) {
+  if (!data || data.s !== 'ok' || !Array.isArray(data.t) || data.t.length < 2) return null;
+  const T = data.t;
+  const O = data.o;
+  const H = data.h;
+  const L = data.l;
+  const C = data.c;
+  const V = data.v;
+  const dayBased = ['D', 'W', 'M'].includes(String(resolution).toUpperCase());
+
+  const candleData = [];
+  const volumeData = [];
+
+  for (let i = 0; i < T.length; i++) {
+    const c = C[i];
+    if (!Number.isFinite(c)) continue;
+    const o = Number.isFinite(O[i]) ? O[i] : c;
+    const h = Number.isFinite(H[i]) ? H[i] : Math.max(o, c);
+    const l = Number.isFinite(L[i]) ? L[i] : Math.min(o, c);
+    const ts = T[i];
+    const time = dayBased ? new Date(ts * 1000).toISOString().slice(0, 10) : ts;
+    candleData.push({ time, open: o, high: h, low: l, close: c });
+    const vol = Number.isFinite(V?.[i]) && V[i] >= 0 ? V[i] : 0;
+    const up = c >= o;
+    volumeData.push({
+      time,
+      value: vol,
+      color: up ? 'rgba(22, 163, 74, 0.45)' : 'rgba(220, 38, 38, 0.45)',
+    });
+  }
+
+  if (candleData.length < 2) return null;
+  return {
+    candleData,
+    volumeData,
+    meta: { currency: 'USD', shortName: '' },
+  };
+}
+
+/**
+ * @param {string} finnhubToken optional; if set, used when Yahoo routes fail (e.g. static deploy without /__yahoo).
+ */
+export async function fetchFinnhubChartOHLCV(symbol, range, interval, finnhubToken) {
+  const sym = sanitizeSymbol(symbol);
+  const token = String(finnhubToken || '').trim();
+  if (!sym || !token) return null;
+  const { from, to, resolution } = mapToFinnhubCandleParams(range, interval);
+  try {
+    const url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(resolution)}&from=${from}&to=${to}&token=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.error) return null;
+    return parseFinnhubCandlesToOHLCV(json, resolution);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} [finnhubToken] optional Finnhub key for fallback when Yahoo proxy is not available
  * @returns {Promise<ReturnType<typeof parseYahooOHLCV>>}
  */
-export async function fetchYahooChartOHLCV(symbol, range, interval) {
+export async function fetchYahooChartOHLCV(symbol, range, interval, finnhubToken) {
   const urls = buildYahooChartUrls(symbol, range, interval);
   for (const url of urls) {
     try {
@@ -131,6 +221,8 @@ export async function fetchYahooChartOHLCV(symbol, range, interval) {
       /* next */
     }
   }
+  const fh = await fetchFinnhubChartOHLCV(symbol, range, interval, finnhubToken);
+  if (fh) return fh;
   return null;
 }
 
