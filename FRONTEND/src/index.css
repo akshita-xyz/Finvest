@@ -59,6 +59,21 @@ body, #root {
   }
 }
 
+/* Light app routes add this class so the system cursor returns (custom #cur/#dot only exist on landing). */
+body.dashboard-mode {
+  cursor: auto !important;
+  background: #f3f5f9 !important;
+}
+
+body.dashboard-mode #cur,
+body.dashboard-mode #dot {
+  display: none !important;
+}
+
+body.dashboard-mode::before {
+  display: none !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    GRAIN TEXTURE OVERLAY
    ═══════════════════════════════════════════════════════════════ */
@@ -310,10 +325,17 @@ nav {
   position: sticky;
   top: 0;
   z-index: 90;
-  background: rgba(240, 237, 230, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
-  border-bottom: 0.5px solid var(--border);
+  border: 2px solid #22c55e;
+  transition: border-color 0.3s ease;
 }
+
+nav:hover {
+  border-color: #eab308;
+}
+
+
 
 .nav-inner {
   display: flex;

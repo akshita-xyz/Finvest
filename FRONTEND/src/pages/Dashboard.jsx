@@ -1,5 +1,12 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import {
+  classificationFromFearScore,
+  fetchUserProfile,
+  updateUserProfileFields,
+} from '../services/userProfileService';
+import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity,
@@ -8,49 +15,46 @@ import {
   MessageSquare,
   Menu,
   X,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertTriangle,
   Target,
   Zap,
-  Clock,
   Sparkles,
-  ChevronRight,
   Newspaper,
   ExternalLink,
   Search,
   ClipboardList,
+  Lock,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as ChartPie,
-  Pie,
-  Cell,
-} from 'recharts';
+import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
+import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
+import RiskCandlestickChart from '../components/RiskCandlestickChart';
 
-const mockMonteCarloData = Array.from({ length: 30 }).map((_, i) => ({
-  year: 2024 + i,
-  suggested: 10000 * Math.pow(1.08, i),
-  inflation: 10000 * Math.pow(1.03, i),
-  conservative: 10000 * Math.pow(1.05, i)
-}));
+const MotionDiv = motion.div;
 
 const NEWS_PREVIEW_COUNT = 4;
 
+const SIDEBAR_NAV_IDS = ['risk-sandbox', 'live-stocks', 'news-feed', 'portfolio-insights'];
+
+function readNavSectionFromHash() {
+  if (typeof window === 'undefined') return 'risk-sandbox';
+  const h = (window.location.hash || '').replace(/^#/, '');
+  if (SIDEBAR_NAV_IDS.includes(h)) return h;
+  if (h === 'live-markets-news') return 'live-stocks';
+  return 'risk-sandbox';
+}
+
 function Dashboard() {
+  const { user } = useAuth();
+  const location = useLocation();
   const FINNHUB_API_KEY = 'd7cj1gpr01qv03eshng0d7cj1gpr01qv03eshngg';
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
   const [fearScore, setFearScore] = useState(50);
+  const [profileReady, setProfileReady] = useState(false);
+  const [profileSyncNote, setProfileSyncNote] = useState('');
+  const skipProfileSaveRef = useRef(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeNavSection, setActiveNavSection] = useState(readNavSectionFromHash);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     { role: 'ai', text: "Hi! I'm your AI Portfolio Explainer. I can explain any financial concept like you're 15. What's on your mind?" }
@@ -67,7 +71,6 @@ function Dashboard() {
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState('');
   const [riskResult, setRiskResult] = useState(null);
-  const [riskSeries, setRiskSeries] = useState([]);
   const [stockSuggestions, setStockSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newsCategory, setNewsCategory] = useState('general');
@@ -76,16 +79,108 @@ function Dashboard() {
   const [newsRegion, setNewsRegion] = useState('all');
   const [newsLastUpdated, setNewsLastUpdated] = useState(null);
   const [newsModalOpen, setNewsModalOpen] = useState(false);
+  /** Timed personality / “fear” quiz in Personalized Portfolio — unlocks Behavior & Portfolio Overview. */
+  const [fearQuizComplete, setFearQuizComplete] = useState(true);
+
+  /** Guests always see charts; signed-in users only after profile load confirms quiz completion (avoids unlock flash). */
+  const behaviorOverviewUnlocked = !user?.id || (profileReady && fearQuizComplete);
+  const ppNavActive = location.pathname.startsWith('/personalized-portfolio');
+  const goalsNavActive = location.pathname.startsWith('/financial-goals');
 
   useEffect(() => {
-    const score = localStorage.getItem('fearScore');
-    if (score) {
-      const parsedScore = parseInt(score, 10);
-      if (!isNaN(parsedScore)) {
-        setFearScore(parsedScore);
-      }
-    }
+    const onHash = () => setActiveNavSection(readNavSectionFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  // Load fear score + prefs from Supabase per user; fall back to localStorage when no row / guest.
+  useEffect(() => {
+    if (!user?.id) {
+      setFearQuizComplete(true);
+      const score = localStorage.getItem('fearScore');
+      if (score) {
+        const parsedScore = parseInt(score, 10);
+        if (!isNaN(parsedScore)) setFearScore(parsedScore);
+      }
+      setProfileReady(true);
+      queueMicrotask(() => {
+        skipProfileSaveRef.current = false;
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setProfileReady(false);
+    skipProfileSaveRef.current = true;
+
+    (async () => {
+      const { data, error } = await fetchUserProfile(user.id);
+      if (cancelled) return;
+      if (error) {
+        setFearQuizComplete(true);
+        setProfileSyncNote(
+          error.message?.includes('user_profiles') || error.code === '42P01'
+            ? 'Create the user_profiles table: run Finvest/supabase/sql/001_user_profiles.sql in the Supabase SQL Editor.'
+            : error.message || 'Could not load your saved profile.'
+        );
+        setProfileReady(true);
+        queueMicrotask(() => {
+          skipProfileSaveRef.current = false;
+        });
+        return;
+      }
+      setFearQuizComplete(Boolean(data?.dashboard_prefs?.assessment?.completedAt));
+      if (data?.fear_score != null && Number.isFinite(Number(data.fear_score))) {
+        const n = Math.min(100, Math.max(0, Number(data.fear_score)));
+        setFearScore(n);
+        localStorage.setItem('fearScore', String(n));
+      } else {
+        const score = localStorage.getItem('fearScore');
+        if (score) {
+          const parsedScore = parseInt(score, 10);
+          if (!isNaN(parsedScore)) setFearScore(parsedScore);
+        }
+      }
+      setProfileReady(true);
+      queueMicrotask(() => {
+        skipProfileSaveRef.current = false;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const refreshQuiz = () => {
+      fetchUserProfile(user.id).then(({ data }) => {
+        if (data) setFearQuizComplete(Boolean(data.dashboard_prefs?.assessment?.completedAt));
+      });
+    };
+    window.addEventListener('focus', refreshQuiz);
+    return () => window.removeEventListener('focus', refreshQuiz);
+  }, [user?.id]);
+
+  // Persist fear score + derived classification for custom per-user dashboard state.
+  useEffect(() => {
+    if (!profileReady || !user?.id || skipProfileSaveRef.current) return;
+    const handle = setTimeout(() => {
+      updateUserProfileFields(user.id, {
+        fear_score: fearScore,
+        classification: classificationFromFearScore(fearScore),
+      }).then(({ error }) => {
+        if (error) {
+          setProfileSyncNote(error.message || 'Could not save profile to Supabase.');
+        } else {
+          setProfileSyncNote('');
+          localStorage.setItem('fearScore', String(fearScore));
+        }
+      });
+    }, 750);
+    return () => clearTimeout(handle);
+  }, [fearScore, profileReady, user?.id]);
 
   useEffect(() => {
     const runRiskSimulation = async () => {
@@ -107,43 +202,91 @@ function Dashboard() {
         const profitLoss = currentValue - initialInvestment;
         const profitLossPercent = (profitLoss / initialInvestment) * 100;
 
+        const metric52w = await fetchFinnhub52WeekMetric(FINNHUB_API_KEY, selectedStock);
+
         const to = Math.floor(Date.now() / 1000);
         const from = to - (24 * 60 * 60);
         const candleResponse = await fetch(
           `https://finnhub.io/api/v1/stock/candle?symbol=${selectedStock}&resolution=5&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`
         );
         const candleData = candleResponse.ok ? await candleResponse.json() : null;
-        const validCandles = candleData && candleData.s === 'ok' && Array.isArray(candleData.c) && candleData.c.length > 1;
+        const finnhubIntraOk =
+          candleData && candleData.s === 'ok' && Array.isArray(candleData.c) && candleData.c.length > 1;
 
-        let points = [];
+        const yahooIntra = finnhubIntraOk ? null : await fetchYahooChartCandles(selectedStock, '1d', '5m');
+
+        let yearlyHighPrice = null;
+        let yearlyLowPrice = null;
+        let yearlyHighValue = null;
+        let yearlyLowValue = null;
+        let stopLossPrice = null;
+        let stopLossPositionValue = null;
+        let riskRewardRatio = null;
+        let riskRewardNote = '';
+
+        if (metric52w) {
+          yearlyHighPrice = metric52w.high;
+          yearlyLowPrice = metric52w.low;
+        } else {
+          const yahooYear = await fetchYahooChartCandles(selectedStock, '1y', '1d');
+          if (yahooYear && yahooYear.c.length > 1) {
+            yearlyHighPrice = Math.max(...yahooYear.c);
+            yearlyLowPrice = Math.min(...yahooYear.c);
+          }
+        }
+
+        const entry = quote.c;
+        const sharesAtEntry = initialInvestment / entry;
+        if (Number.isFinite(yearlyHighPrice) && Number.isFinite(yearlyLowPrice)) {
+          yearlyHighValue = sharesAtEntry * yearlyHighPrice;
+          yearlyLowValue = sharesAtEntry * yearlyLowPrice;
+          const belowYearLow = yearlyLowPrice * 0.99;
+          const structuralStop = belowYearLow < entry ? belowYearLow : entry * 0.95;
+          stopLossPrice = structuralStop;
+          stopLossPositionValue = sharesAtEntry * stopLossPrice;
+          const riskPerShare = entry - stopLossPrice;
+          const rewardToHigh = yearlyHighPrice - entry;
+          if (riskPerShare > 0 && rewardToHigh > 0) {
+            riskRewardRatio = rewardToHigh / riskPerShare;
+            riskRewardNote = 'Upside to 52-week high vs. risk to suggested stop (illustrative).';
+          } else if (riskPerShare > 0 && rewardToHigh <= 0) {
+            riskRewardNote = 'Price is at or above the 52-week high; R:R to that level is not defined.';
+          } else {
+            riskRewardNote = 'Could not derive a consistent stop vs. entry; treat R:R as N/A.';
+          }
+        }
+
         let worstValue = initialInvestment;
         let peakValue = initialInvestment;
         let maxDrawdownPercent = 0;
 
-        if (validCandles) {
+        if (finnhubIntraOk) {
           const firstPrice = candleData.c[0];
           const shares = initialInvestment / firstPrice;
-          points = candleData.c.map((price, index) => {
+          for (let index = 0; index < candleData.c.length; index++) {
+            const price = candleData.c[index];
             const value = shares * price;
             if (value > peakValue) peakValue = value;
             if (value < worstValue) worstValue = value;
             const drawdown = ((peakValue - value) / peakValue) * 100;
             if (drawdown > maxDrawdownPercent) maxDrawdownPercent = drawdown;
-            return {
-              i: index,
-              t: candleData.t?.[index] ? new Date(candleData.t[index] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : `${index}`,
-              value,
-            };
-          });
+          }
+        } else if (yahooIntra && yahooIntra.c.length > 1) {
+          const firstPrice = yahooIntra.c[0];
+          const shares = initialInvestment / firstPrice;
+          for (let index = 0; index < yahooIntra.c.length; index++) {
+            const price = yahooIntra.c[index];
+            const value = shares * price;
+            if (value > peakValue) peakValue = value;
+            if (value < worstValue) worstValue = value;
+            const drawdown = ((peakValue - value) / peakValue) * 100;
+            if (drawdown > maxDrawdownPercent) maxDrawdownPercent = drawdown;
+          }
         } else {
           const fallbackLowPercent = Number.isFinite(quote.l) && quote.c > 0 ? ((quote.l - quote.c) / quote.c) * 100 : livePercentChange;
           const worstPercent = Math.min(livePercentChange, fallbackLowPercent);
           worstValue = initialInvestment + (initialInvestment * worstPercent) / 100;
           maxDrawdownPercent = Math.abs(worstPercent);
-          points = [
-            { i: 0, t: 'Open', value: initialInvestment },
-            { i: 1, t: 'Now', value: currentValue },
-          ];
         }
 
         setRiskResult({
@@ -158,9 +301,16 @@ function Dashboard() {
           livePercentChange,
           liveAbsoluteChange,
           liveRupeeImpact,
+          yearlyHighPrice,
+          yearlyLowPrice,
+          yearlyHighValue,
+          yearlyLowValue,
+          stopLossPrice,
+          stopLossPositionValue,
+          riskRewardRatio,
+          riskRewardNote,
         });
-        setRiskSeries(points);
-      } catch (error) {
+      } catch {
         const fallbackQuote = liveStocks.find((item) => item.symbol === selectedStock);
         if (fallbackQuote && Number.isFinite(fallbackQuote.price) && fallbackQuote.price > 0) {
           const initialInvestment = 10000;
@@ -168,10 +318,6 @@ function Dashboard() {
           const liveRupeeImpact = (initialInvestment * livePercentChange) / 100;
           const currentValue = initialInvestment + liveRupeeImpact;
           const estWorstValue = initialInvestment + (initialInvestment * Math.min(livePercentChange, -Math.abs(livePercentChange))) / 100;
-          const estimatedSeries = Array.from({ length: 24 }).map((_, index) => {
-            const factor = 1 + (livePercentChange / 100) * (index / 23);
-            return { i: index, t: `${index}:00`, value: initialInvestment * factor };
-          });
           setRiskResult({
             symbol: selectedStock,
             initialInvestment,
@@ -184,12 +330,18 @@ function Dashboard() {
             livePercentChange,
             liveAbsoluteChange: fallbackQuote.change || 0,
             liveRupeeImpact,
+            yearlyHighPrice: null,
+            yearlyLowPrice: null,
+            yearlyHighValue: null,
+            yearlyLowValue: null,
+            stopLossPrice: null,
+            stopLossPositionValue: null,
+            riskRewardRatio: null,
+            riskRewardNote: '',
           });
-          setRiskSeries(estimatedSeries);
           setRiskError('');
         } else {
           setRiskResult(null);
-          setRiskSeries([]);
           setRiskError('Unable to fetch stock history right now (rate limit). Try again in a few seconds.');
         }
       } finally {
@@ -220,7 +372,7 @@ function Dashboard() {
             description: item.description,
           })) : [];
         setStockSuggestions(results);
-      } catch (e) {
+      } catch {
         setStockSuggestions([]);
       }
     }, 220);
@@ -253,7 +405,7 @@ function Dashboard() {
         });
         const stockData = await Promise.all(requests);
         setLiveStocks(stockData.filter((item) => Number.isFinite(item.price) && item.price > 0));
-      } catch (error) {
+      } catch {
         setMarketError('Unable to load live stocks right now.');
       } finally {
         setMarketLoading(false);
@@ -296,7 +448,7 @@ function Dashboard() {
           : [];
         setLiveNews(normalized);
         setNewsLastUpdated(Date.now());
-      } catch (error) {
+      } catch {
         setNewsError('Unable to load market news right now.');
       } finally {
         setNewsLoading(false);
@@ -401,13 +553,7 @@ function Dashboard() {
 
   const investorInfo = getInvestorType();
   const allocation = getAllocation();
-  const confidence = Math.max(62, 92 - Math.round(Math.abs(fearScore - 52) / 2));
-  const nextStep = fearScore > 65 ? 'Reduce panic-risk with a safer mix' : 'Build conviction with simulated outcomes';
-  const dashboardStats = [
-    { label: 'Loss probability', value: '28%', tone: 'danger' },
-    { label: 'Projected 30Y value', value: '$100,627', tone: 'neutral' },
-    { label: 'AI confidence', value: `${confidence}%`, tone: 'success' },
-  ];
+
   const formatPercent = (value) => {
     if (!Number.isFinite(value)) return '--';
     const sign = value >= 0 ? '+' : '';
@@ -423,13 +569,6 @@ function Dashboard() {
     if (!Number.isFinite(value)) return '--';
     return `₹${Math.round(value).toLocaleString('en-IN')}`;
   };
-
-  const riskLineColor =
-    riskResult && Number.isFinite(riskResult.liveRupeeImpact)
-      ? riskResult.liveRupeeImpact < 0
-        ? '#dc2626'
-        : '#16a34a'
-      : '#0f172a';
 
   const formatNewsUpdated = (ts) => {
     if (!ts) return '';
@@ -476,39 +615,82 @@ function Dashboard() {
           </button>
         </div>
 
-        <div className="db-sidebar__panel">
-          <div className="db-panel-label">Today&apos;s focus</div>
-          <div className="db-panel-title">{nextStep}</div>
-          <p className="db-panel-copy">
-            Contextualize possible losses before real exposure so decisions feel calm, informed, and deliberate.
-          </p>
-        </div>
 
-        <nav className="db-sidebar__nav">
-          <a href="#risk-sandbox" className="db-nav-item active">
-            <Activity size={18} /> Risk Sandbox
+        <nav className="db-sidebar__nav" aria-label="Dashboard sections">
+          <p className="db-sidebar__nav-eyebrow">Navigate</p>
+          <a
+            href="#risk-sandbox"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'risk-sandbox' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('risk-sandbox');
+              setSidebarOpen(false);
+            }}
+          >
+            <Activity size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Risk Sandbox</span>
+              <span className="db-nav-item__sub">Fear score &amp; scenarios</span>
+            </span>
           </a>
-          <a href="#portfolio-insights" className="db-nav-item">
-            <Shield size={18} /> Safety Tests
+          <a
+            href="#live-stocks"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'live-stocks' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('live-stocks');
+              setSidebarOpen(false);
+            }}
+          >
+            <TrendingUp size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Live Markets</span>
+              <span className="db-nav-item__sub">Quotes &amp; movers</span>
+            </span>
           </a>
-          <a href="#live-markets-news" className="db-nav-item" onClick={() => setSidebarOpen(false)}>
-            <TrendingUp size={18} /> Live Markets
-          </a>
-          <a href="#live-markets-news" className="db-nav-item" onClick={() => setSidebarOpen(false)}>
-            <MessageSquare size={18} /> News Feed
+          <a
+            href="#news-feed"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'news-feed' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('news-feed');
+              setSidebarOpen(false);
+            }}
+          >
+            <MessageSquare size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">News Feed</span>
+              <span className="db-nav-item__sub">Headlines &amp; search</span>
+            </span>
           </a>
           <Link
             to="/financial-goals"
-            className="db-nav-item"
+            className={`db-nav-item db-nav-item--rail${goalsNavActive ? ' active' : ''}`}
             onClick={() => setSidebarOpen(false)}
           >
-            <ClipboardList size={18} /> Financial Goals
+            <ClipboardList size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Financial Goals</span>
+              <span className="db-nav-item__sub">Future You planner</span>
+            </span>
+          </Link>
+          <div className="db-sidebar__nav-divider" role="presentation" />
+          <Link
+            to={getPersonalizedPortfolioResumePath()}
+            className={`db-nav-item db-nav-item--rail db-nav-item--pp${ppNavActive ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('portfolio-insights');
+              setSidebarOpen(false);
+            }}
+          >
+            <Shield size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">AI Portfolio</span>
+              <span className="db-nav-item__sub">Quiz &amp; personalized mix</span>
+            </span>
           </Link>
         </nav>
 
-        <div className="db-sidebar__footer">
-          <div className="db-panel-label">Live market intel</div>
-          <div className="db-market-list">
+        <div className="db-sidebar-market-rail db-sidebar-market-rail--bottom" aria-label="Live market snapshot">
+          <div className="db-sidebar-market-rail__label">Live market intel</div>
+          <div className="db-sidebar-market-rail__list">
             {marketLoading && <div className="db-market-empty">Loading live stocks...</div>}
             {!marketLoading && marketError && <div className="db-market-empty">{marketError}</div>}
             {!marketLoading && !marketError && liveStocks.slice(0, 4).map((item) => (
@@ -533,6 +715,18 @@ function Dashboard() {
             <h2 className="db-page-title">Risk Sandbox</h2>
             <p className="db-page-subtitle">
               Beautiful, high-clarity visuals for fear score, portfolio mix, and scenario-based confidence.
+              {user?.id ? (
+                <span className="db-profile-welcome">
+                  {' '}
+                  Signed in as{' '}
+                  <strong>{user.user_metadata?.full_name || user.email}</strong>
+                  {profileSyncNote ? (
+                    <span className="db-profile-sync db-profile-sync--warn"> — {profileSyncNote}</span>
+                  ) : (
+                    <span className="db-profile-sync"> — your fear score is saved to Supabase for this account.</span>
+                  )}
+                </span>
+              ) : null}
             </p>
           </div>
           <button className="db-ai-btn" onClick={() => setChatOpen(!chatOpen)}>
@@ -541,11 +735,46 @@ function Dashboard() {
         </header>
 
         <section className="db-group">
-          <div className="db-section-heading">
-            <h3>Behavior & Portfolio Overview</h3>
+          <div
+            className={`db-section-heading db-section-heading--row${behaviorOverviewUnlocked ? '' : ' db-section-heading--locked'}`}
+          >
+            <h3>Behavior &amp; Portfolio Overview</h3>
+            {!behaviorOverviewUnlocked ? (
+              <span className="db-section-lock-pill">
+                <Lock size={14} aria-hidden />
+                Locked
+              </span>
+            ) : null}
           </div>
-          <section className="db-hero-grid" id="risk-sandbox">
-          <article className="db-card db-card--hero">
+          {!behaviorOverviewUnlocked ? (
+            <p className="db-section-lock-lead">
+              Complete the timed <strong>fear personality quiz</strong> in AI Portfolio to unlock your cockpit charts
+              and suggested mix.
+            </p>
+          ) : null}
+
+          <div className={`db-behavior-wrap${behaviorOverviewUnlocked ? '' : ' db-behavior-wrap--locked'}`}>
+            {!behaviorOverviewUnlocked ? (
+              <div className="db-behavior-lock-panel" role="region" aria-label="Unlock behavior overview">
+                <div className="db-behavior-lock-icon" aria-hidden>
+                  <Lock size={28} />
+                </div>
+                <h4 className="db-behavior-lock-title">Take the quiz to unlock</h4>
+                <p className="db-behavior-lock-copy">
+                  We use your answers and response timing to shape your investor cluster and allocation preview — then
+                  this section opens here on the dashboard.
+                </p>
+                <Link
+                  to="/personalized-portfolio?tab=quiz"
+                  className="db-behavior-unlock-btn"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  Open AI Portfolio — Personality quiz
+                </Link>
+              </div>
+            ) : null}
+            <section className="db-hero-grid" id="risk-sandbox">
+              <article className="db-card db-card--hero">
             <div className="db-card-badge">Behavioral Analysis</div>
             <div className="db-score-wrap">
               <div className="db-fear-number" style={{ color: investorInfo.color }}>
@@ -560,17 +789,25 @@ function Dashboard() {
             <div className="db-progress">
               <div className="db-progress-fill" style={{ width: `${fearScore}%`, backgroundColor: investorInfo.color }}></div>
             </div>
-            <div className="db-mini-stats">
-              {dashboardStats.map((item) => (
-                <div key={item.label} className={`db-mini-stat ${item.tone}`}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </div>
-              ))}
-            </div>
-          </article>
+            <label className="db-fear-slider-label" htmlFor="fear-score-slider">
+              Adjust fear score (stored per user in Supabase)
+            </label>
+            <input
+              id="fear-score-slider"
+              type="range"
+              min={0}
+              max={100}
+              value={fearScore}
+              onChange={(e) => setFearScore(Number(e.target.value))}
+              className="db-fear-slider"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={fearScore}
+            />
 
-          <article className="db-card db-card--portfolio" id="portfolio-insights">
+              </article>
+
+              <article className="db-card db-card--portfolio" id="portfolio-insights">
             <div className="db-card-header">
               <h3><Target size={20} /> AI Portfolio</h3>
               <span className="db-badge">Personalized</span>
@@ -610,100 +847,9 @@ function Dashboard() {
                 </div>
               </div>
             </div>
-          </article>
-          </section>
-        </section>
-
-        <section className="db-group">
-          <div className="db-section-heading">
-            <h3>Scenario & Timeline Analysis</h3>
+              </article>
+            </section>
           </div>
-          <section className="db-lower-grid">
-          <article className="db-card db-card--wide" id="future-simulator">
-            <div className="db-card-header">
-              <div>
-                <h3><Activity size={20} /> Future Simulator</h3>
-                <p className="db-card-subtitle">1,000 market scenarios over 30 years</p>
-              </div>
-              <div className="db-prob-badges">
-                <span className="db-prob-badge profit"><ArrowUpRight size={14}/> 72% Profit</span>
-                <span className="db-prob-badge loss"><ArrowDownRight size={14}/> 28% Loss</span>
-              </div>
-            </div>
-
-            <div className="db-chart-shell">
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={mockMonteCarloData}>
-                  <defs>
-                    <linearGradient id="colorSuggested" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c8ff00" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#c8ff00" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorInflation" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="year" stroke="#3f3f46" tick={{fill: '#d4d4d8', fontSize: 11}} />
-                  <YAxis stroke="#3f3f46" tick={{fill: '#d4d4d8', fontSize: 11}} tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#101117', border: '1px solid #2b2d38', borderRadius: '12px', color: '#f8fafc' }}
-                    labelStyle={{ color: '#fff' }}
-                  />
-                  <Area type="monotone" dataKey="suggested" stroke="#c8ff00" fillOpacity={1} fill="url(#colorSuggested)" name="Your Portfolio" strokeWidth={2} />
-                  <Area type="monotone" dataKey="inflation" stroke="#ef4444" fillOpacity={1} fill="url(#colorInflation)" name="Inflation Impact" strokeWidth={1} strokeDasharray="5 5" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="db-scenario-box">
-              <div className="db-scenario-info">
-                <AlertTriangle size={18} className="db-warning-icon" />
-                <div>
-                  <div className="db-scenario-title">Market Crash Simulator</div>
-                  <div className="db-scenario-desc">See how your portfolio performs in a 2008-style crisis</div>
-                </div>
-              </div>
-              <button className="db-scenario-btn">Test Scenario</button>
-            </div>
-          </article>
-
-          <article className="db-card db-card--side">
-            <div className="db-card-header">
-              <h3><Clock size={20} /> Timeline Projections</h3>
-            </div>
-            <div className="db-timeline-grid">
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">5yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 5)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">10yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 10)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">20yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 20)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item highlight">
-                <div className="db-timeline-year">30yr</div>
-                <div className="db-timeline-value">
-                  ${(10000 * Math.pow(1.08, 30)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-            </div>
-            <div className="db-side-note">
-              <ChevronRight size={16} />
-              <span>Use these projections to compare safe, moderate, and high-risk paths side by side.</span>
-            </div>
-          </article>
-          </section>
         </section>
 
         <section className="db-group" id="live-markets-news">
@@ -711,7 +857,7 @@ function Dashboard() {
             <h3>Live Markets & News Tracking</h3>
           </div>
           <section className="db-live-section">
-          <article className="db-card">
+          <article className="db-card" id="live-stocks">
             <div className="db-card-header">
               <h3><TrendingUp size={20} /> Live Stocks Tracker</h3>
               <span className="db-card-subtitle">Auto-refresh every 30 seconds</span>
@@ -740,7 +886,7 @@ function Dashboard() {
             )}
           </article>
 
-          <article className="db-card">
+          <article className="db-card" id="news-feed">
             <div className="db-card-header">
               <h3><Newspaper size={20} /> Live Financial News</h3>
               <span className="db-card-subtitle">
@@ -842,7 +988,8 @@ function Dashboard() {
               <div>
                 <h3><Activity size={20} /> Real Data Simulation</h3>
                 <p className="db-card-subtitle">
-                  Enter any stock to see a live intraday chart and exact API-based impact for a ₹10,000 position.
+                  TradingView-style candlestick chart with timeframe buttons; Finnhub live quote and 52-week metrics; ₹10,000
+                  risk cards below. Use <code>npm run dev</code> or <code>VITE_BACKEND_URL</code> for Yahoo chart data.
                 </p>
               </div>
             </div>
@@ -892,27 +1039,15 @@ function Dashboard() {
               <>
                 <div className="db-risk-explain">
                   <p>
-                    This chart maps your simulated ₹10,000 position using live intraday prices for <strong>{riskResult.symbol}</strong>.
-                    The red/green impact below is matched directly from the live API day-change percentage.
+                    <strong>Finnhub</strong> quote + <strong>stock/metric</strong> power the summary cards. The chart uses{' '}
+                    <strong>TradingView Lightweight Charts™</strong> with OHLC + volume from Yahoo (same{' '}
+                    <code>/__yahoo</code> or backend proxy as before). Drag the crosshair to read O/H/L/C per bar. Stop and R:R
+                    are educational only.
                   </p>
                 </div>
-                <div className={`db-risk-chart ${(riskResult?.liveRupeeImpact ?? 0) < 0 ? 'is-loss' : 'is-gain'}`}>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <ComposedChart data={riskSeries}>
-                      <defs>
-                        <linearGradient id={`riskGrad-${riskResult.symbol.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={riskLineColor} stopOpacity={0.35} />
-                          <stop offset="100%" stopColor={riskLineColor} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="t" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} stroke="#94a3b8" />
-                      <Tooltip formatter={(v) => formatINR(v)} />
-                      <Area type="monotone" dataKey="value" stroke="none" fill={`url(#riskGrad-${riskResult.symbol.replace(/[^a-zA-Z0-9]/g, '')})`} />
-                      <Line type="monotone" dataKey="value" stroke={riskLineColor} strokeWidth={2.8} dot={false} activeDot={{ r: 4, fill: riskLineColor }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
+
+                <RiskCandlestickChart symbol={riskResult.symbol} />
+
                 <div className="db-risk-grid">
                   <div className="db-risk-card">
                     <span>Selected stock</span>
@@ -942,6 +1077,42 @@ function Dashboard() {
                       {formatINR(riskResult.worstLoss)} ({riskResult.maxDrawdownPercent.toFixed(2)}% drawdown)
                     </strong>
                   </div>
+                  {Number.isFinite(riskResult.yearlyHighPrice) && (
+                    <div className="db-risk-card">
+                      <span>52-week high</span>
+                      <strong className="up">
+                        {formatMoney(riskResult.yearlyHighPrice)} · {formatINR(riskResult.yearlyHighValue)}
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.yearlyLowPrice) && (
+                    <div className="db-risk-card">
+                      <span>52-week low</span>
+                      <strong className="down">
+                        {formatMoney(riskResult.yearlyLowPrice)} · {formatINR(riskResult.yearlyLowValue)}
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.stopLossPrice) && Number.isFinite(riskResult.stopLossPositionValue) && (
+                    <div className="db-risk-card">
+                      <span>Suggested stop (calc.)</span>
+                      <strong className="down">
+                        {formatMoney(riskResult.stopLossPrice)} → {formatINR(riskResult.stopLossPositionValue)} if hit
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.riskRewardRatio) && (
+                    <div className="db-risk-card">
+                      <span>Risk : reward (to 52-week high)</span>
+                      <strong>1 : {riskResult.riskRewardRatio.toFixed(2)}</strong>
+                    </div>
+                  )}
+                  {riskResult.riskRewardNote && !Number.isFinite(riskResult.riskRewardRatio) && (
+                    <div className="db-risk-card db-risk-card--wide">
+                      <span>Risk : reward</span>
+                      <strong>{riskResult.riskRewardNote}</strong>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -951,7 +1122,7 @@ function Dashboard() {
 
       <AnimatePresence>
         {chatOpen && (
-          <motion.div 
+          <MotionDiv
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -983,7 +1154,7 @@ function Dashboard() {
               />
               <button type="submit">Send</button>
             </form>
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
 

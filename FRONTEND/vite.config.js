@@ -1,10 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // Yahoo chart JSON has no browser CORS; dev server proxies so 1D/1Y series work without a backend.
+      '/__yahoo': {
+        target: 'https://query1.finance.yahoo.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/__yahoo/, ''),
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (compatible; FINVEST/1.0)');
+          });
+        },
+      },
+    },
+  },
   resolve: {
     dedupe: ['react', 'react-dom'],
+    // Rolldown/Vite 8 can fail to resolve tslib from @supabase/* when hoisting is odd; vendor copy keeps builds reliable.
+    alias: {
+      tslib: path.resolve(__dirname, 'vendor/tslib/tslib.es6.mjs'),
+    },
   },
 })

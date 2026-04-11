@@ -15,6 +15,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Secrets (Supabase keys, etc.) — use .env.example as a template
+.env
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

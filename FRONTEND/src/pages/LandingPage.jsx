@@ -111,7 +111,7 @@ function LandingPage() {
       )}
 
       <div id="site" className={introComplete ? "show" : ""} style={introComplete ? { display: 'block' } : { display: 'none' }}>
-        <Navbar onOpenModal={setActiveModal} />
+        <Navbar />
         <MarqueeTracker />
         <Hero onOpenModal={setActiveModal} />
         <Marquee />
