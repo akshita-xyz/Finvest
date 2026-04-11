@@ -50,8 +50,39 @@ function readNavSectionFromHash() {
   return 'risk-sandbox';
 }
 
+const CHAT_BACKEND = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+function displayNameForAi(user) {
+  if (!user) return '';
+  const meta = user.user_metadata || {};
+  return (meta.full_name || meta.name || user.email?.split('@')[0] || '').trim();
+}
+
+function buildPortfolioAiGreeting(user, profileRow, fearScore) {
+  const name = displayNameForAi(user) || 'there';
+  const classification =
+    (profileRow?.classification && String(profileRow.classification)) ||
+    classificationFromFearScore(fearScore);
+  const assessment = profileRow?.dashboard_prefs?.assessment;
+  const cluster = assessment?.clusterLabel ? ` Your latest personality quiz cluster: ${assessment.clusterLabel}.` : '';
+  const alloc = assessment?.allocation;
+  const allocHint =
+    alloc && typeof alloc === 'object'
+      ? (() => {
+          const parts = ['stocks', 'bonds', 'cash']
+            .filter((k) => Number.isFinite(Number(alloc[k])))
+            .map((k) => `${k} ~${alloc[k]}%`);
+          const label = alloc.label ? ` (${String(alloc.label)})` : '';
+          return parts.length
+            ? ` Suggested mix from your personalized portfolio: ${parts.join(', ')}${label}.`
+            : '';
+        })()
+      : '';
+  return `Hi${name === 'there' ? '' : ` ${name}`}, how can I help you? You show up as a ${classification} investor based on your behavioral signals and saved profile.${cluster}${allocHint} Ask me anything about investing or your dashboard.`;
+}
+
 function Dashboard() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const location = useLocation();
   const FINNHUB_API_KEY = String(
     import.meta.env.VITE_FINNHUB_API_KEY || import.meta.env.FINNHUB_API_KEY || ''
@@ -62,12 +93,13 @@ function Dashboard() {
   const [profileReady, setProfileReady] = useState(false);
   const [profileSyncNote, setProfileSyncNote] = useState('');
   const skipProfileSaveRef = useRef(true);
+  const chatGreetingReadyRef = useRef(false);
+  const [profileRow, setProfileRow] = useState(/** @type {Record<string, unknown> | null} */ (null));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNavSection, setActiveNavSection] = useState(readNavSectionFromHash);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'ai', text: "Hi! I'm your AI Portfolio Explainer. I can explain any financial concept like you're 15. What's on your mind?" }
-  ]);
+  const [chatMessages, setChatMessages] = useState(/** @type {{ role: string; text: string }[]} */ ([]));
+  const [chatSending, setChatSending] = useState(false);
   const [inputText, setInputText] = useState('');
   const [liveStocks, setLiveStocks] = useState([]);
   const [liveNews, setLiveNews] = useState([]);
@@ -109,6 +141,16 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
+    chatGreetingReadyRef.current = false;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!profileReady || chatGreetingReadyRef.current) return;
+    chatGreetingReadyRef.current = true;
+    setChatMessages([{ role: 'ai', text: buildPortfolioAiGreeting(user, profileRow, fearScore) }]);
+  }, [profileReady, user, profileRow, fearScore]);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(EMOTION_STORAGE_KEY);
       if (raw) setLastEmotionSnapshot(JSON.parse(raw));
@@ -120,6 +162,7 @@ function Dashboard() {
   // Load fear score + prefs from Supabase per user; fall back to localStorage when no row / guest.
   useEffect(() => {
     if (!user?.id) {
+      setProfileRow(null);
       setFearQuizComplete(true);
       const score = localStorage.getItem('fearScore');
       if (score) {
@@ -140,6 +183,7 @@ function Dashboard() {
     (async () => {
       const { data, error } = await fetchUserProfile(user.id);
       if (cancelled) return;
+      setProfileRow(data && !error ? data : null);
       if (error) {
         setFearQuizComplete(true);
         setProfileSyncNote(
@@ -180,7 +224,10 @@ function Dashboard() {
     if (!user?.id) return undefined;
     const refreshQuiz = () => {
       fetchUserProfile(user.id).then(({ data }) => {
-        if (data) setFearQuizComplete(Boolean(data.dashboard_prefs?.assessment?.completedAt));
+        if (data) {
+          setProfileRow(data);
+          setFearQuizComplete(Boolean(data.dashboard_prefs?.assessment?.completedAt));
+        }
       });
     };
     window.addEventListener('focus', refreshQuiz);
@@ -529,20 +576,45 @@ function Dashboard() {
     };
   }, [newsModalOpen]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    const trimmed = inputText.trim();
+    if (!trimmed || chatSending) return;
 
-    const newMsgs = [...chatMessages, { role: 'user', text: inputText }];
-    setChatMessages(newMsgs);
+    const historyForApi = chatMessages.map((m) => ({
+      role: m.role === 'ai' ? 'model' : 'user',
+      text: m.text,
+    }));
+
+    setChatMessages((prev) => [...prev, { role: 'user', text: trimmed }]);
     setInputText('');
+    setChatSending(true);
 
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        role: 'ai', 
-        text: `Great question about "${newMsgs[newMsgs.length-1].text}"! Think of it like this: if you had a magic garden that grows money, you'd want to know if it'll rain or shine, right? That's what we help you prepare for!` 
-      }]);
-    }, 1000);
+    try {
+      const res = await fetch(`${CHAT_BACKEND}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          userType: user?.id ? 'signed_in' : 'guest',
+          access_token: session?.access_token || '',
+          history: historyForApi,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const reply = typeof data?.reply === 'string' ? data.reply : 'No response from the AI service.';
+      setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          text: 'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND), run Ollama (`ollama serve` + `ollama pull` your model), set OLLAMA_MODEL and optional ALPHA_VANTAGE_KEY in BACKEND/.env, or check VITE_BACKEND_URL.',
+        },
+      ]);
+    } finally {
+      setChatSending(false);
+    }
   };
 
   const getInvestorType = () => {
@@ -1420,11 +1492,19 @@ function Dashboard() {
             </div>
 
             <div className="db-chat-messages">
+              {chatMessages.length === 0 && (
+                <div className="db-chat-message ai">Loading your Finvest assistant…</div>
+              )}
               {chatMessages.map((msg, idx) => (
                 <div key={idx} className={`db-chat-message ${msg.role}`}>
                   {msg.text}
                 </div>
               ))}
+              {chatSending && (
+                <div className="db-chat-message ai" aria-live="polite">
+                  Thinking…
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSendMessage} className="db-chat-input">
@@ -1433,8 +1513,11 @@ function Dashboard() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Ask anything about investing..."
+                disabled={chatSending || !profileReady}
               />
-              <button type="submit">Send</button>
+              <button type="submit" disabled={chatSending || !profileReady}>
+                {chatSending ? 'Sending…' : 'Send'}
+              </button>
             </form>
           </MotionDiv>
         )}
