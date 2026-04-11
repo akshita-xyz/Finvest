@@ -1,0 +1,18 @@
+{
+  "name": "finvest-blockchain",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Finvest achievement NFT (ERC-721) — from code/swagat branch, extended for production mint control",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.22.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.6"
+  }
+}

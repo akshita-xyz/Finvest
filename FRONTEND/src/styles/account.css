@@ -163,6 +163,221 @@
   background: rgba(255, 77, 28, 0.12);
 }
 
+/* Certificates & NFT badges (account hub) */
+.account-nft {
+  padding: 1.25rem 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.account-nft-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--D);
+  font-size: 1.15rem;
+  margin: 0 0 0.35rem;
+  color: var(--paper, #f5f5f0);
+}
+
+.account-nft-lead {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.account-nft-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .account-nft-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.account-nft-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.account-nft-card--open {
+  border-color: rgba(200, 255, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(200, 255, 0, 0.08);
+}
+
+.account-nft-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--accent, #c8ff00);
+}
+
+.account-nft-card-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: var(--M);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper, #eee);
+}
+
+.account-nft-card-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.account-nft-meta {
+  margin: 0.65rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(200, 255, 0, 0.85);
+}
+
+.account-nft-locked {
+  margin: 0.65rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.account-nft-pill {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(200, 255, 0, 0.12);
+  color: var(--accent);
+  font-size: 0.72rem;
+}
+
+.account-nft-chain {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.account-nft-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  color: var(--paper);
+}
+
+.account-nft-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.account-code {
+  font-size: 0.72em;
+  padding: 0.1em 0.25em;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.account-nft-wallet-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.account-nft-input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.account-nft-btn {
+  flex: 0 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.account-nft-secondary {
+  font-family: var(--M);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.account-nft-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.account-nft-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account-nft-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.account-nft-spin {
+  animation: account-nft-spin 0.9s linear infinite;
+}
+
+@keyframes account-nft-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.account-nft-chain-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.account-nft-chain-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.78rem;
+}
+
+.account-nft-token {
+  flex-shrink: 0;
+  font-family: var(--M);
+  color: var(--accent);
+}
+
+.account-nft-uri {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-nft-muted {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 /* Navbar account slot (replaces former “Get started” CTA position) */
 .nav-account-slot {
   position: relative;

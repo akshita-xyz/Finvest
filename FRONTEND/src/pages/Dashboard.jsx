@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import {
   classificationFromFearScore,
   fetchUserProfile,
+  mergeDashboardPrefs,
   updateUserProfileFields,
 } from '../services/userProfileService';
 import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
@@ -656,6 +657,15 @@ function Dashboard() {
         setLastEmotionSnapshot(snap);
       } catch {
         /* ignore */
+      }
+      if (user?.id) {
+        mergeDashboardPrefs(user.id, {
+          nft_badges: {
+            emotionCertificate: true,
+            emotionCertificateAt: new Date().toISOString(),
+            emotionArchetype: evaluated.archetype,
+          },
+        }).catch(() => {});
       }
     } else {
       setEmotionQIndex((i) => i + 1);

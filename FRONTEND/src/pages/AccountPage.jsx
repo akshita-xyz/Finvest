@@ -7,7 +7,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/auth/AuthLayout';
-import { ensureUserProfile } from '../services/userProfileService';
+import { ensureUserProfile, fetchUserProfile, mergeDashboardPrefs } from '../services/userProfileService';
+import ProfileNftCertificates from '../components/ProfileNftCertificates';
 import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import '../styles/auth.css';
 import '../styles/account.css';
@@ -43,12 +44,46 @@ export default function AccountPage() {
   const [nameDraft, setNameDraft] = useState('');
   const [profileMsg, setProfileMsg] = useState(/** @type {string | null} */ (null));
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileRow, setProfileRow] = useState(/** @type {Record<string, unknown> | null} */ (null));
 
   useEffect(() => {
     if (!user) return;
     setAvatarUrlDraft(user.user_metadata?.avatar_url || '');
     setNameDraft(user.user_metadata?.full_name || '');
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    fetchUserProfile(user.id).then(({ data, error }) => {
+      if (cancelled || error || !data) return;
+      setProfileRow(data);
+      const prefs = data.dashboard_prefs;
+      const nb = prefs?.nft_badges;
+      const hasEmotionCert = nb && typeof nb === 'object' && nb.emotionCertificate;
+      if (hasEmotionCert) return;
+      try {
+        const raw = window.localStorage.getItem('finvest_emotion_mindset_v1');
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        if (!o?.at) return;
+        mergeDashboardPrefs(user.id, {
+          nft_badges: {
+            emotionCertificate: true,
+            emotionCertificateAt: new Date(o.at).toISOString(),
+            emotionArchetype: o.archetype,
+          },
+        }).then(({ data: d }) => {
+          if (!cancelled && d) setProfileRow(d);
+        });
+      } catch {
+        /* ignore */
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const afterAuthSuccess = useCallback(() => {
     const fromPath = location.state?.from?.pathname;
@@ -208,6 +243,21 @@ export default function AccountPage() {
               <span>Timed quiz, investor cluster, and personalized allocation — part of your account.</span>
             </Link>
           </div>
+
+          <ProfileNftCertificates
+            dashboardPrefs={profileRow?.dashboard_prefs}
+            walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
+            onSaveWallet={async (address) => {
+              const { error, user: u } = await updateUserMetadata({ wallet_address: address });
+              if (error) return { error };
+              if (u) await ensureUserProfile(u);
+              if (user?.id) {
+                const { data } = await fetchUserProfile(user.id);
+                if (data) setProfileRow(data);
+              }
+              return { error: null };
+            }}
+          />
 
           <div className="account-actions">
             <Link to="/" className="account-text-link">

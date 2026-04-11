@@ -122,7 +122,13 @@ export default function PersonalizedPortfolioHub() {
 
   const handleQuizComplete = async (result) => {
     if (!user?.id) return;
-    await mergeDashboardPrefs(user.id, { assessment: result });
+    await mergeDashboardPrefs(user.id, {
+      assessment: result,
+      nft_badges: {
+        portfolioCertificate: true,
+        portfolioCertificateAt: new Date().toISOString(),
+      },
+    });
     const fs = result.traits?.fearScore;
     if (fs != null && Number.isFinite(fs)) {
       await updateUserProfileFields(user.id, {

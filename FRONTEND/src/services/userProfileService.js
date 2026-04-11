@@ -92,5 +92,22 @@ export async function mergeDashboardPrefs(userId, prefsPatch) {
     row?.dashboard_prefs && typeof row.dashboard_prefs === 'object' && !Array.isArray(row.dashboard_prefs)
       ? row.dashboard_prefs
       : {};
-  return updateUserProfileFields(userId, { dashboard_prefs: { ...prev, ...prefsPatch } });
+  const next = { ...prev };
+  for (const [key, val] of Object.entries(prefsPatch)) {
+    if (
+      key === 'nft_badges' &&
+      val &&
+      typeof val === 'object' &&
+      !Array.isArray(val)
+    ) {
+      const prevBadges =
+        prev.nft_badges && typeof prev.nft_badges === 'object' && !Array.isArray(prev.nft_badges)
+          ? prev.nft_badges
+          : {};
+      next.nft_badges = { ...prevBadges, ...val };
+    } else {
+      next[key] = val;
+    }
+  }
+  return updateUserProfileFields(userId, { dashboard_prefs: next });
 }
