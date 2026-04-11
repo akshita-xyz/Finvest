@@ -24,19 +24,10 @@ import {
   ClipboardList,
   Lock,
 } from 'lucide-react';
-import {
-  Area,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as ChartPie,
-  Pie,
-  Cell,
-} from 'recharts';
+import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
+import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
+import RiskCandlestickChart from '../components/RiskCandlestickChart';
 
 const MotionDiv = motion.div;
 
@@ -80,7 +71,6 @@ function Dashboard() {
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState('');
   const [riskResult, setRiskResult] = useState(null);
-  const [riskSeries, setRiskSeries] = useState([]);
   const [stockSuggestions, setStockSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newsCategory, setNewsCategory] = useState('general');
@@ -212,43 +202,91 @@ function Dashboard() {
         const profitLoss = currentValue - initialInvestment;
         const profitLossPercent = (profitLoss / initialInvestment) * 100;
 
+        const metric52w = await fetchFinnhub52WeekMetric(FINNHUB_API_KEY, selectedStock);
+
         const to = Math.floor(Date.now() / 1000);
         const from = to - (24 * 60 * 60);
         const candleResponse = await fetch(
           `https://finnhub.io/api/v1/stock/candle?symbol=${selectedStock}&resolution=5&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`
         );
         const candleData = candleResponse.ok ? await candleResponse.json() : null;
-        const validCandles = candleData && candleData.s === 'ok' && Array.isArray(candleData.c) && candleData.c.length > 1;
+        const finnhubIntraOk =
+          candleData && candleData.s === 'ok' && Array.isArray(candleData.c) && candleData.c.length > 1;
 
-        let points = [];
+        const yahooIntra = finnhubIntraOk ? null : await fetchYahooChartCandles(selectedStock, '1d', '5m');
+
+        let yearlyHighPrice = null;
+        let yearlyLowPrice = null;
+        let yearlyHighValue = null;
+        let yearlyLowValue = null;
+        let stopLossPrice = null;
+        let stopLossPositionValue = null;
+        let riskRewardRatio = null;
+        let riskRewardNote = '';
+
+        if (metric52w) {
+          yearlyHighPrice = metric52w.high;
+          yearlyLowPrice = metric52w.low;
+        } else {
+          const yahooYear = await fetchYahooChartCandles(selectedStock, '1y', '1d');
+          if (yahooYear && yahooYear.c.length > 1) {
+            yearlyHighPrice = Math.max(...yahooYear.c);
+            yearlyLowPrice = Math.min(...yahooYear.c);
+          }
+        }
+
+        const entry = quote.c;
+        const sharesAtEntry = initialInvestment / entry;
+        if (Number.isFinite(yearlyHighPrice) && Number.isFinite(yearlyLowPrice)) {
+          yearlyHighValue = sharesAtEntry * yearlyHighPrice;
+          yearlyLowValue = sharesAtEntry * yearlyLowPrice;
+          const belowYearLow = yearlyLowPrice * 0.99;
+          const structuralStop = belowYearLow < entry ? belowYearLow : entry * 0.95;
+          stopLossPrice = structuralStop;
+          stopLossPositionValue = sharesAtEntry * stopLossPrice;
+          const riskPerShare = entry - stopLossPrice;
+          const rewardToHigh = yearlyHighPrice - entry;
+          if (riskPerShare > 0 && rewardToHigh > 0) {
+            riskRewardRatio = rewardToHigh / riskPerShare;
+            riskRewardNote = 'Upside to 52-week high vs. risk to suggested stop (illustrative).';
+          } else if (riskPerShare > 0 && rewardToHigh <= 0) {
+            riskRewardNote = 'Price is at or above the 52-week high; R:R to that level is not defined.';
+          } else {
+            riskRewardNote = 'Could not derive a consistent stop vs. entry; treat R:R as N/A.';
+          }
+        }
+
         let worstValue = initialInvestment;
         let peakValue = initialInvestment;
         let maxDrawdownPercent = 0;
 
-        if (validCandles) {
+        if (finnhubIntraOk) {
           const firstPrice = candleData.c[0];
           const shares = initialInvestment / firstPrice;
-          points = candleData.c.map((price, index) => {
+          for (let index = 0; index < candleData.c.length; index++) {
+            const price = candleData.c[index];
             const value = shares * price;
             if (value > peakValue) peakValue = value;
             if (value < worstValue) worstValue = value;
             const drawdown = ((peakValue - value) / peakValue) * 100;
             if (drawdown > maxDrawdownPercent) maxDrawdownPercent = drawdown;
-            return {
-              i: index,
-              t: candleData.t?.[index] ? new Date(candleData.t[index] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : `${index}`,
-              value,
-            };
-          });
+          }
+        } else if (yahooIntra && yahooIntra.c.length > 1) {
+          const firstPrice = yahooIntra.c[0];
+          const shares = initialInvestment / firstPrice;
+          for (let index = 0; index < yahooIntra.c.length; index++) {
+            const price = yahooIntra.c[index];
+            const value = shares * price;
+            if (value > peakValue) peakValue = value;
+            if (value < worstValue) worstValue = value;
+            const drawdown = ((peakValue - value) / peakValue) * 100;
+            if (drawdown > maxDrawdownPercent) maxDrawdownPercent = drawdown;
+          }
         } else {
           const fallbackLowPercent = Number.isFinite(quote.l) && quote.c > 0 ? ((quote.l - quote.c) / quote.c) * 100 : livePercentChange;
           const worstPercent = Math.min(livePercentChange, fallbackLowPercent);
           worstValue = initialInvestment + (initialInvestment * worstPercent) / 100;
           maxDrawdownPercent = Math.abs(worstPercent);
-          points = [
-            { i: 0, t: 'Open', value: initialInvestment },
-            { i: 1, t: 'Now', value: currentValue },
-          ];
         }
 
         setRiskResult({
@@ -263,8 +301,15 @@ function Dashboard() {
           livePercentChange,
           liveAbsoluteChange,
           liveRupeeImpact,
+          yearlyHighPrice,
+          yearlyLowPrice,
+          yearlyHighValue,
+          yearlyLowValue,
+          stopLossPrice,
+          stopLossPositionValue,
+          riskRewardRatio,
+          riskRewardNote,
         });
-        setRiskSeries(points);
       } catch {
         const fallbackQuote = liveStocks.find((item) => item.symbol === selectedStock);
         if (fallbackQuote && Number.isFinite(fallbackQuote.price) && fallbackQuote.price > 0) {
@@ -273,10 +318,6 @@ function Dashboard() {
           const liveRupeeImpact = (initialInvestment * livePercentChange) / 100;
           const currentValue = initialInvestment + liveRupeeImpact;
           const estWorstValue = initialInvestment + (initialInvestment * Math.min(livePercentChange, -Math.abs(livePercentChange))) / 100;
-          const estimatedSeries = Array.from({ length: 24 }).map((_, index) => {
-            const factor = 1 + (livePercentChange / 100) * (index / 23);
-            return { i: index, t: `${index}:00`, value: initialInvestment * factor };
-          });
           setRiskResult({
             symbol: selectedStock,
             initialInvestment,
@@ -289,12 +330,18 @@ function Dashboard() {
             livePercentChange,
             liveAbsoluteChange: fallbackQuote.change || 0,
             liveRupeeImpact,
+            yearlyHighPrice: null,
+            yearlyLowPrice: null,
+            yearlyHighValue: null,
+            yearlyLowValue: null,
+            stopLossPrice: null,
+            stopLossPositionValue: null,
+            riskRewardRatio: null,
+            riskRewardNote: '',
           });
-          setRiskSeries(estimatedSeries);
           setRiskError('');
         } else {
           setRiskResult(null);
-          setRiskSeries([]);
           setRiskError('Unable to fetch stock history right now (rate limit). Try again in a few seconds.');
         }
       } finally {
@@ -506,13 +553,7 @@ function Dashboard() {
 
   const investorInfo = getInvestorType();
   const allocation = getAllocation();
-  const confidence = Math.max(62, 92 - Math.round(Math.abs(fearScore - 52) / 2));
-  const nextStep = fearScore > 65 ? 'Reduce panic-risk with a safer mix' : 'Build conviction with simulated outcomes';
-  const dashboardStats = [
-    { label: 'Loss probability', value: '28%', tone: 'danger' },
-    { label: 'Projected 30Y value', value: '$100,627', tone: 'neutral' },
-    { label: 'AI confidence', value: `${confidence}%`, tone: 'success' },
-  ];
+
   const formatPercent = (value) => {
     if (!Number.isFinite(value)) return '--';
     const sign = value >= 0 ? '+' : '';
@@ -528,13 +569,6 @@ function Dashboard() {
     if (!Number.isFinite(value)) return '--';
     return `₹${Math.round(value).toLocaleString('en-IN')}`;
   };
-
-  const riskLineColor =
-    riskResult && Number.isFinite(riskResult.liveRupeeImpact)
-      ? riskResult.liveRupeeImpact < 0
-        ? '#dc2626'
-        : '#16a34a'
-      : '#0f172a';
 
   const formatNewsUpdated = (ts) => {
     if (!ts) return '';
@@ -581,13 +615,6 @@ function Dashboard() {
           </button>
         </div>
 
-        <div className="db-sidebar__panel">
-          <div className="db-panel-label">Today&apos;s focus</div>
-          <div className="db-panel-title">{nextStep}</div>
-          <p className="db-panel-copy">
-            Contextualize possible losses before real exposure so decisions feel calm, informed, and deliberate.
-          </p>
-        </div>
 
         <nav className="db-sidebar__nav" aria-label="Dashboard sections">
           <p className="db-sidebar__nav-eyebrow">Navigate</p>
@@ -777,14 +804,7 @@ function Dashboard() {
               aria-valuemax={100}
               aria-valuenow={fearScore}
             />
-            <div className="db-mini-stats">
-              {dashboardStats.map((item) => (
-                <div key={item.label} className={`db-mini-stat ${item.tone}`}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </div>
-              ))}
-            </div>
+
               </article>
 
               <article className="db-card db-card--portfolio" id="portfolio-insights">
@@ -968,7 +988,8 @@ function Dashboard() {
               <div>
                 <h3><Activity size={20} /> Real Data Simulation</h3>
                 <p className="db-card-subtitle">
-                  Enter any stock to see a live intraday chart and exact API-based impact for a ₹10,000 position.
+                  TradingView-style candlestick chart with timeframe buttons; Finnhub live quote and 52-week metrics; ₹10,000
+                  risk cards below. Use <code>npm run dev</code> or <code>VITE_BACKEND_URL</code> for Yahoo chart data.
                 </p>
               </div>
             </div>
@@ -1018,27 +1039,15 @@ function Dashboard() {
               <>
                 <div className="db-risk-explain">
                   <p>
-                    This chart maps your simulated ₹10,000 position using live intraday prices for <strong>{riskResult.symbol}</strong>.
-                    The red/green impact below is matched directly from the live API day-change percentage.
+                    <strong>Finnhub</strong> quote + <strong>stock/metric</strong> power the summary cards. The chart uses{' '}
+                    <strong>TradingView Lightweight Charts™</strong> with OHLC + volume from Yahoo (same{' '}
+                    <code>/__yahoo</code> or backend proxy as before). Drag the crosshair to read O/H/L/C per bar. Stop and R:R
+                    are educational only.
                   </p>
                 </div>
-                <div className={`db-risk-chart ${(riskResult?.liveRupeeImpact ?? 0) < 0 ? 'is-loss' : 'is-gain'}`}>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <ComposedChart data={riskSeries}>
-                      <defs>
-                        <linearGradient id={`riskGrad-${riskResult.symbol.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={riskLineColor} stopOpacity={0.35} />
-                          <stop offset="100%" stopColor={riskLineColor} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="t" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} stroke="#94a3b8" />
-                      <Tooltip formatter={(v) => formatINR(v)} />
-                      <Area type="monotone" dataKey="value" stroke="none" fill={`url(#riskGrad-${riskResult.symbol.replace(/[^a-zA-Z0-9]/g, '')})`} />
-                      <Line type="monotone" dataKey="value" stroke={riskLineColor} strokeWidth={2.8} dot={false} activeDot={{ r: 4, fill: riskLineColor }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
+
+                <RiskCandlestickChart symbol={riskResult.symbol} />
+
                 <div className="db-risk-grid">
                   <div className="db-risk-card">
                     <span>Selected stock</span>
@@ -1068,6 +1077,42 @@ function Dashboard() {
                       {formatINR(riskResult.worstLoss)} ({riskResult.maxDrawdownPercent.toFixed(2)}% drawdown)
                     </strong>
                   </div>
+                  {Number.isFinite(riskResult.yearlyHighPrice) && (
+                    <div className="db-risk-card">
+                      <span>52-week high</span>
+                      <strong className="up">
+                        {formatMoney(riskResult.yearlyHighPrice)} · {formatINR(riskResult.yearlyHighValue)}
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.yearlyLowPrice) && (
+                    <div className="db-risk-card">
+                      <span>52-week low</span>
+                      <strong className="down">
+                        {formatMoney(riskResult.yearlyLowPrice)} · {formatINR(riskResult.yearlyLowValue)}
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.stopLossPrice) && Number.isFinite(riskResult.stopLossPositionValue) && (
+                    <div className="db-risk-card">
+                      <span>Suggested stop (calc.)</span>
+                      <strong className="down">
+                        {formatMoney(riskResult.stopLossPrice)} → {formatINR(riskResult.stopLossPositionValue)} if hit
+                      </strong>
+                    </div>
+                  )}
+                  {Number.isFinite(riskResult.riskRewardRatio) && (
+                    <div className="db-risk-card">
+                      <span>Risk : reward (to 52-week high)</span>
+                      <strong>1 : {riskResult.riskRewardRatio.toFixed(2)}</strong>
+                    </div>
+                  )}
+                  {riskResult.riskRewardNote && !Number.isFinite(riskResult.riskRewardRatio) && (
+                    <div className="db-risk-card db-risk-card--wide">
+                      <span>Risk : reward</span>
+                      <strong>{riskResult.riskRewardNote}</strong>
+                    </div>
+                  )}
                 </div>
               </>
             )}
