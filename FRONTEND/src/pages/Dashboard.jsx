@@ -52,7 +52,9 @@ function readNavSectionFromHash() {
 function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
-  const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY || '';
+  const FINNHUB_API_KEY = String(
+    import.meta.env.VITE_FINNHUB_API_KEY || import.meta.env.FINNHUB_API_KEY || ''
+  ).trim();
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
   const [fearScore, setFearScore] = useState(50);

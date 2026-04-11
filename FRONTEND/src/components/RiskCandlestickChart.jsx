@@ -169,7 +169,9 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
 
     let cancelled = false;
     const cfg = RISK_CHART_TIMEFRAMES.find((t) => t.id === tfId) || RISK_CHART_TIMEFRAMES[6];
-    const finnhubKey = String(import.meta.env.VITE_FINNHUB_API_KEY || finnhubToken || '').trim();
+    const finnhubKey = String(
+      import.meta.env.VITE_FINNHUB_API_KEY || import.meta.env.FINNHUB_API_KEY || finnhubToken || ''
+    ).trim();
 
     (async () => {
       setLoading(true);
