@@ -23,17 +23,23 @@ import {
   Search,
   ClipboardList,
   Lock,
+  Brain,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
 import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
 import RiskCandlestickChart from '../components/RiskCandlestickChart';
+import { EMOTION_QUESTIONS, evaluateEmotionMindset } from '../lib/emotionInvestingMindset';
 
 const MotionDiv = motion.div;
 
 const NEWS_PREVIEW_COUNT = 4;
 
-const SIDEBAR_NAV_IDS = ['risk-sandbox', 'live-stocks', 'news-feed', 'portfolio-insights'];
+const SIDEBAR_NAV_IDS = ['risk-sandbox', 'live-stocks', 'news-feed', 'emotion-testing', 'portfolio-insights'];
+
+const EMOTION_STORAGE_KEY = 'finvest_emotion_mindset_v1';
 
 function readNavSectionFromHash() {
   if (typeof window === 'undefined') return 'risk-sandbox';
@@ -79,6 +85,12 @@ function Dashboard() {
   const [newsRegion, setNewsRegion] = useState('all');
   const [newsLastUpdated, setNewsLastUpdated] = useState(null);
   const [newsModalOpen, setNewsModalOpen] = useState(false);
+  /** Emotion & mindset check-in before investing (personality-style, on-dashboard). */
+  const [emotionPhase, setEmotionPhase] = useState('intro');
+  const [emotionQIndex, setEmotionQIndex] = useState(0);
+  const [emotionAnswers, setEmotionAnswers] = useState({});
+  const [emotionResult, setEmotionResult] = useState(null);
+  const [lastEmotionSnapshot, setLastEmotionSnapshot] = useState(null);
   /** Timed personality / “fear” quiz in Personalized Portfolio — unlocks Behavior & Portfolio Overview. */
   const [fearQuizComplete, setFearQuizComplete] = useState(true);
 
@@ -91,6 +103,15 @@ function Dashboard() {
     const onHash = () => setActiveNavSection(readNavSectionFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(EMOTION_STORAGE_KEY);
+      if (raw) setLastEmotionSnapshot(JSON.parse(raw));
+    } catch {
+      setLastEmotionSnapshot(null);
+    }
   }, []);
 
   // Load fear score + prefs from Supabase per user; fall back to localStorage when no row / guest.
@@ -602,6 +623,59 @@ function Dashboard() {
     setShowSuggestions(false);
   };
 
+  const emotionTotalQ = EMOTION_QUESTIONS.length;
+  const emotionQuestion = EMOTION_QUESTIONS[emotionQIndex];
+  const emotionProgressPct =
+    emotionPhase === 'quiz' ? Math.round(((emotionQIndex + 1) / emotionTotalQ) * 100) : 0;
+
+  const startEmotionQuiz = () => {
+    setEmotionAnswers({});
+    setEmotionQIndex(0);
+    setEmotionResult(null);
+    setEmotionPhase('quiz');
+  };
+
+  const pickEmotionOption = (optionId) => {
+    if (!emotionQuestion) return;
+    const next = { ...emotionAnswers, [emotionQuestion.id]: optionId };
+    setEmotionAnswers(next);
+    if (emotionQIndex + 1 >= emotionTotalQ) {
+      const evaluated = evaluateEmotionMindset(next);
+      setEmotionResult(evaluated);
+      setEmotionPhase('results');
+      try {
+        const snap = {
+          at: Date.now(),
+          overallReadiness: evaluated.overallReadiness,
+          archetype: evaluated.archetype,
+          improveCount: evaluated.improveAreas.length,
+        };
+        localStorage.setItem(EMOTION_STORAGE_KEY, JSON.stringify(snap));
+        setLastEmotionSnapshot(snap);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      setEmotionQIndex((i) => i + 1);
+    }
+  };
+
+  const emotionBack = () => {
+    if (emotionQIndex <= 0) return;
+    const curId = EMOTION_QUESTIONS[emotionQIndex]?.id;
+    const trimmed = { ...emotionAnswers };
+    if (curId) delete trimmed[curId];
+    setEmotionAnswers(trimmed);
+    setEmotionQIndex((i) => i - 1);
+  };
+
+  const retakeEmotionQuiz = () => {
+    setEmotionPhase('intro');
+    setEmotionQIndex(0);
+    setEmotionAnswers({});
+    setEmotionResult(null);
+  };
+
   return (
     <div className="db-shell">
       <aside className={`db-sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -658,6 +732,20 @@ function Dashboard() {
             <span className="db-nav-item__text">
               <span className="db-nav-item__title">News Feed</span>
               <span className="db-nav-item__sub">Headlines &amp; search</span>
+            </span>
+          </a>
+          <a
+            href="#emotion-testing"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'emotion-testing' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('emotion-testing');
+              setSidebarOpen(false);
+            }}
+          >
+            <Brain size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Emotion Testing</span>
+              <span className="db-nav-item__sub">Mindset before investing</span>
             </span>
           </a>
           <Link
@@ -1115,6 +1203,188 @@ function Dashboard() {
                   )}
                 </div>
               </>
+            )}
+          </article>
+        </section>
+
+        <section className="db-group" id="emotion-testing">
+          <div className="db-section-heading">
+            <h3>Emotion Testing</h3>
+          </div>
+          <article className="db-card db-card--emotion">
+            <div className="db-card-header">
+              <div>
+                <h3>
+                  <Brain size={20} aria-hidden /> Pre-investing mindset check
+                </h3>
+                <p className="db-card-subtitle">
+                  Like a short personality-style reflection: emotional balance, impulses, and whether your headspace fits
+                  taking financial risk. Not medical or clinical advice — a gentle mirror before you commit capital.
+                </p>
+              </div>
+            </div>
+
+            {emotionPhase === 'intro' && (
+              <div className="db-emotion-intro">
+                <p className="db-emotion-lead">
+                  Investing works best when you are not running on empty. This check-in highlights what you already
+                  handle well, where to grow, and what to watch so you only scale risk in the right mindset.
+                </p>
+                <ul className="db-emotion-bullets">
+                  <li>12 scenario questions — about two minutes</li>
+                  <li>Six areas: regulation, FOMO, setbacks, patience, honesty, life balance</li>
+                  <li>Results: strengths, growth edges, and a practical “look after” list</li>
+                </ul>
+                {lastEmotionSnapshot?.at && (
+                  <p className="db-emotion-last">
+                    Last check-in:{' '}
+                    <strong>{lastEmotionSnapshot.archetype}</strong> · readiness ~{lastEmotionSnapshot.overallReadiness}% ·{' '}
+                    {new Date(lastEmotionSnapshot.at).toLocaleDateString()}
+                  </p>
+                )}
+                <button type="button" className="db-emotion-primary" onClick={startEmotionQuiz}>
+                  Begin check-in
+                  <ChevronRight size={18} aria-hidden />
+                </button>
+              </div>
+            )}
+
+            {emotionPhase === 'quiz' && emotionQuestion && (
+              <div className="db-emotion-quiz">
+                <div className="db-emotion-progress-wrap">
+                  <div className="db-emotion-progress-meta">
+                    <span>
+                      Question {emotionQIndex + 1} of {emotionTotalQ}
+                    </span>
+                    <span>{emotionProgressPct}%</span>
+                  </div>
+                  <div className="db-emotion-progress-bar" role="progressbar" aria-valuenow={emotionProgressPct} aria-valuemin={0} aria-valuemax={100}>
+                    <div className="db-emotion-progress-fill" style={{ width: `${emotionProgressPct}%` }} />
+                  </div>
+                </div>
+                <h4 className="db-emotion-qtext" id={`emotion-q-${emotionQuestion.id}`}>
+                  {emotionQuestion.text}
+                </h4>
+                <div className="db-emotion-options" role="group" aria-labelledby={`emotion-q-${emotionQuestion.id}`}>
+                  {emotionQuestion.options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className="db-emotion-option"
+                      onClick={() => pickEmotionOption(opt.id)}
+                    >
+                      <span className="db-emotion-option-label">{opt.label}</span>
+                      <ChevronRight size={16} className="db-emotion-option-chevron" aria-hidden />
+                    </button>
+                  ))}
+                </div>
+                <div className="db-emotion-quiz-foot">
+                  <button type="button" className="db-emotion-text-btn" onClick={emotionBack} disabled={emotionQIndex <= 0}>
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {emotionPhase === 'results' && emotionResult && (
+              <div className="db-emotion-results">
+                <div className="db-emotion-archetype">
+                  <span className="db-emotion-archetype-label">Your mindset profile</span>
+                  <h4 className="db-emotion-archetype-title">{emotionResult.archetype}</h4>
+                  <div className="db-emotion-readiness">
+                    <span className="db-emotion-readiness-num">{emotionResult.overallReadiness}</span>
+                    <span className="db-emotion-readiness-suffix">/ 100 readiness index</span>
+                  </div>
+                  <p className="db-emotion-summary">{emotionResult.closingAdvice}</p>
+                </div>
+
+                <div className="db-emotion-pillars-grid">
+                  {emotionResult.pillars.map((p) => (
+                    <div
+                      key={p.key}
+                      className={`db-emotion-pillar db-emotion-pillar--${p.level}`}
+                    >
+                      <div className="db-emotion-pillar-head">
+                        <span className="db-emotion-pillar-title">{p.title}</span>
+                        <span className="db-emotion-pillar-badge">
+                          {p.level === 'strong' ? 'Strong' : p.level === 'grow' ? 'Grow' : 'Watch'}
+                        </span>
+                      </div>
+                      <p className="db-emotion-pillar-blurb">{p.blurb}</p>
+                      <div className="db-emotion-pillar-meter">
+                        <div className="db-emotion-pillar-meter-fill" style={{ width: `${p.percent}%` }} />
+                      </div>
+                      <span className="db-emotion-pillar-pct">{p.percent}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="db-emotion-columns">
+                  <div className="db-emotion-col db-emotion-col--good">
+                    <h5>Areas you show strength</h5>
+                    {emotionResult.masteredAreas.length ? (
+                      <ul>
+                        {emotionResult.masteredAreas.map((t) => (
+                          <li key={t}>{t}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="db-emotion-col-empty">No single area maxed yet — that is okay; small habits add up.</p>
+                    )}
+                  </div>
+                  <div className="db-emotion-col db-emotion-col--grow">
+                    <h5>Prioritize improving</h5>
+                    {emotionResult.improveAreas.length ? (
+                      <ul>
+                        {emotionResult.improveAreas.map((t) => (
+                          <li key={t}>{t}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="db-emotion-col-empty">Nothing flagged as urgent — still revisit when life gets noisy.</p>
+                    )}
+                  </div>
+                  <div className="db-emotion-col db-emotion-col--watch">
+                    <h5>Keep watching</h5>
+                    {emotionResult.watchOutLabels.length ? (
+                      <ul>
+                        {emotionResult.watchOutLabels.map((t) => (
+                          <li key={t}>{t}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="db-emotion-col-empty">Middle band — stay curious, not complacent.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="db-emotion-lookafter">
+                  <h5>What to look after (practical)</h5>
+                  <ul>
+                    {emotionResult.lookAfter.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="db-emotion-results-actions">
+                  <button type="button" className="db-emotion-secondary" onClick={retakeEmotionQuiz}>
+                    <RotateCcw size={16} aria-hidden />
+                    Retake check-in
+                  </button>
+                  <a
+                    href="#ai-risk-simulator"
+                    className="db-emotion-link-down"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    Back to AI Risk Simulator
+                  </a>
+                </div>
+                <p className="db-emotion-disclaimer">
+                  This tool is for self-reflection only. If you are struggling with anxiety, mood, or crisis, please reach
+                  out to a trusted professional or helpline in your region.
+                </p>
+              </div>
             )}
           </article>
         </section>

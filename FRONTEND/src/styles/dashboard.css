@@ -1164,6 +1164,460 @@
   }
 }
 
+/* Emotion / mindset check-in (pre-investing) */
+.db-card--emotion {
+  border-color: #c7d2fe;
+  box-shadow: 0 1px 0 rgba(99, 102, 241, 0.06);
+}
+
+.db-emotion-intro {
+  padding: 4px 4px 8px;
+}
+
+.db-emotion-lead {
+  margin: 0 0 14px;
+  color: #334155;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.db-emotion-bullets {
+  margin: 0 0 18px;
+  padding-left: 1.2rem;
+  color: #475569;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.db-emotion-bullets li {
+  margin-bottom: 6px;
+}
+
+.db-emotion-last {
+  margin: 0 0 16px;
+  font-size: 0.82rem;
+  color: #64748b;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.db-emotion-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.db-emotion-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+.db-emotion-quiz {
+  padding: 4px 0 8px;
+}
+
+.db-emotion-progress-wrap {
+  margin-bottom: 20px;
+}
+
+.db-emotion-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.db-emotion-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.db-emotion-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #818cf8, #6366f1);
+  transition: width 0.25s ease;
+}
+
+.db-emotion-qtext {
+  margin: 0 0 18px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.db-emotion-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-emotion-option {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.db-emotion-option:hover {
+  border-color: #a5b4fc;
+  background: #f5f7ff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+}
+
+.db-emotion-option-label {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.db-emotion-option-chevron {
+  flex-shrink: 0;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.db-emotion-quiz-foot {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.db-emotion-text-btn {
+  border: none;
+  background: none;
+  color: #6366f1;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.db-emotion-text-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.db-emotion-results {
+  padding: 4px 0 8px;
+}
+
+.db-emotion-archetype {
+  text-align: center;
+  padding: 18px 14px 22px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #eef2ff 0%, #fff 55%);
+  border: 1px solid #e0e7ff;
+}
+
+.db-emotion-archetype-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6366f1;
+  margin-bottom: 6px;
+}
+
+.db-emotion-archetype-title {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+
+.db-emotion-readiness {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.db-emotion-readiness-num {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #4f46e5;
+  line-height: 1;
+}
+
+.db-emotion-readiness-suffix {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.db-emotion-summary {
+  margin: 0 auto;
+  max-width: 52ch;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.db-emotion-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.db-emotion-pillar {
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  background: #fafafa;
+}
+
+.db-emotion-pillar--strong {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.db-emotion-pillar--grow {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.db-emotion-pillar--watch {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.db-emotion-pillar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.db-emotion-pillar-title {
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #0f172a;
+}
+
+.db-emotion-pillar-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.db-emotion-pillar--strong .db-emotion-pillar-badge {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.db-emotion-pillar--grow .db-emotion-pillar-badge {
+  background: #fde68a;
+  color: #92400e;
+}
+
+.db-emotion-pillar-blurb {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.db-emotion-pillar-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.db-emotion-pillar-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #818cf8, #6366f1);
+}
+
+.db-emotion-pillar--strong .db-emotion-pillar-meter-fill {
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+}
+
+.db-emotion-pillar--grow .db-emotion-pillar-meter-fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.db-emotion-pillar-pct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.db-emotion-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 900px) {
+  .db-emotion-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.db-emotion-col {
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.db-emotion-col h5 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.db-emotion-col--good {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.db-emotion-col--good h5 {
+  color: #166534;
+}
+
+.db-emotion-col--grow {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.db-emotion-col--grow h5 {
+  color: #92400e;
+}
+
+.db-emotion-col--watch {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.db-emotion-col--watch h5 {
+  color: #475569;
+}
+
+.db-emotion-col ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.db-emotion-col-empty {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.db-emotion-lookafter {
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.db-emotion-lookafter h5 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #1e40af;
+}
+
+.db-emotion-lookafter ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #1e3a8a;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.db-emotion-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.db-emotion-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #c7d2fe;
+  background: #fff;
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #4f46e5;
+  cursor: pointer;
+}
+
+.db-emotion-secondary:hover {
+  background: #eef2ff;
+}
+
+.db-emotion-link-down {
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.db-emotion-disclaimer {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+
 .db-risk-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
