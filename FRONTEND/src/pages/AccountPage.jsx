@@ -8,6 +8,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useAuth } from '../hooks/useAuth';
 import AuthLayout from '../components/auth/AuthLayout';
 import { ensureUserProfile } from '../services/userProfileService';
+import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import '../styles/auth.css';
 import '../styles/account.css';
 
@@ -202,7 +203,7 @@ export default function AccountPage() {
               <strong>Dashboard</strong>
               <span>Live markets, fear score cockpit, and tools.</span>
             </Link>
-            <Link to="/personalized-portfolio" className="account-link-card account-link-card--accent">
+            <Link to={getPersonalizedPortfolioResumePath()} className="account-link-card account-link-card--accent">
               <strong>Portfolio AI</strong>
               <span>Timed quiz, investor cluster, and personalized allocation — part of your account.</span>
             </Link>

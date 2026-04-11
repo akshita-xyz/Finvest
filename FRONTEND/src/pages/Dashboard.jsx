@@ -5,11 +5,9 @@ import {
   fetchUserProfile,
   updateUserProfileFields,
 } from '../services/userProfileService';
-import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const MotionDiv = motion.div;
 import {
   Activity,
   Shield,
@@ -24,6 +22,7 @@ import {
   ExternalLink,
   Search,
   ClipboardList,
+  Lock,
 } from 'lucide-react';
 import {
   Area,
@@ -39,9 +38,11 @@ import {
 } from 'recharts';
 import '../styles/dashboard.css';
 
+const MotionDiv = motion.div;
+
 const NEWS_PREVIEW_COUNT = 4;
 
-const SIDEBAR_NAV_IDS = ['risk-sandbox', 'portfolio-insights', 'live-stocks', 'news-feed'];
+const SIDEBAR_NAV_IDS = ['risk-sandbox', 'live-stocks', 'news-feed', 'portfolio-insights'];
 
 function readNavSectionFromHash() {
   if (typeof window === 'undefined') return 'risk-sandbox';
@@ -53,6 +54,7 @@ function readNavSectionFromHash() {
 
 function Dashboard() {
   const { user } = useAuth();
+  const location = useLocation();
   const FINNHUB_API_KEY = 'd7cj1gpr01qv03eshng0d7cj1gpr01qv03eshngg';
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
@@ -87,6 +89,13 @@ function Dashboard() {
   const [newsRegion, setNewsRegion] = useState('all');
   const [newsLastUpdated, setNewsLastUpdated] = useState(null);
   const [newsModalOpen, setNewsModalOpen] = useState(false);
+  /** Timed personality / “fear” quiz in Personalized Portfolio — unlocks Behavior & Portfolio Overview. */
+  const [fearQuizComplete, setFearQuizComplete] = useState(true);
+
+  /** Guests always see charts; signed-in users only after profile load confirms quiz completion (avoids unlock flash). */
+  const behaviorOverviewUnlocked = !user?.id || (profileReady && fearQuizComplete);
+  const ppNavActive = location.pathname.startsWith('/personalized-portfolio');
+  const goalsNavActive = location.pathname.startsWith('/financial-goals');
 
   useEffect(() => {
     const onHash = () => setActiveNavSection(readNavSectionFromHash());
@@ -97,6 +106,7 @@ function Dashboard() {
   // Load fear score + prefs from Supabase per user; fall back to localStorage when no row / guest.
   useEffect(() => {
     if (!user?.id) {
+      setFearQuizComplete(true);
       const score = localStorage.getItem('fearScore');
       if (score) {
         const parsedScore = parseInt(score, 10);
@@ -117,6 +127,7 @@ function Dashboard() {
       const { data, error } = await fetchUserProfile(user.id);
       if (cancelled) return;
       if (error) {
+        setFearQuizComplete(true);
         setProfileSyncNote(
           error.message?.includes('user_profiles') || error.code === '42P01'
             ? 'Create the user_profiles table: run Finvest/supabase/sql/001_user_profiles.sql in the Supabase SQL Editor.'
@@ -128,6 +139,7 @@ function Dashboard() {
         });
         return;
       }
+      setFearQuizComplete(Boolean(data?.dashboard_prefs?.assessment?.completedAt));
       if (data?.fear_score != null && Number.isFinite(Number(data.fear_score))) {
         const n = Math.min(100, Math.max(0, Number(data.fear_score)));
         setFearScore(n);
@@ -148,6 +160,17 @@ function Dashboard() {
     return () => {
       cancelled = true;
     };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const refreshQuiz = () => {
+      fetchUserProfile(user.id).then(({ data }) => {
+        if (data) setFearQuizComplete(Boolean(data.dashboard_prefs?.assessment?.completedAt));
+      });
+    };
+    window.addEventListener('focus', refreshQuiz);
+    return () => window.removeEventListener('focus', refreshQuiz);
   }, [user?.id]);
 
   // Persist fear score + derived classification for custom per-user dashboard state.
@@ -567,6 +590,7 @@ function Dashboard() {
         </div>
 
         <nav className="db-sidebar__nav" aria-label="Dashboard sections">
+          <p className="db-sidebar__nav-eyebrow">Navigate</p>
           <a
             href="#risk-sandbox"
             className={`db-nav-item db-nav-item--rail${activeNavSection === 'risk-sandbox' ? ' active' : ''}`}
@@ -575,17 +599,11 @@ function Dashboard() {
               setSidebarOpen(false);
             }}
           >
-            <Activity size={18} aria-hidden /> Risk Sandbox
-          </a>
-          <a
-            href="#portfolio-insights"
-            className={`db-nav-item db-nav-item--rail${activeNavSection === 'portfolio-insights' ? ' active' : ''}`}
-            onClick={() => {
-              setActiveNavSection('portfolio-insights');
-              setSidebarOpen(false);
-            }}
-          >
-            <Shield size={18} aria-hidden /> AI Portfolio
+            <Activity size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Risk Sandbox</span>
+              <span className="db-nav-item__sub">Fear score &amp; scenarios</span>
+            </span>
           </a>
           <a
             href="#live-stocks"
@@ -595,7 +613,11 @@ function Dashboard() {
               setSidebarOpen(false);
             }}
           >
-            <TrendingUp size={18} aria-hidden /> Live Markets
+            <TrendingUp size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Live Markets</span>
+              <span className="db-nav-item__sub">Quotes &amp; movers</span>
+            </span>
           </a>
           <a
             href="#news-feed"
@@ -605,14 +627,37 @@ function Dashboard() {
               setSidebarOpen(false);
             }}
           >
-            <MessageSquare size={18} aria-hidden /> News Feed
+            <MessageSquare size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">News Feed</span>
+              <span className="db-nav-item__sub">Headlines &amp; search</span>
+            </span>
           </a>
           <Link
             to="/financial-goals"
-            className="db-nav-item"
+            className={`db-nav-item db-nav-item--rail${goalsNavActive ? ' active' : ''}`}
             onClick={() => setSidebarOpen(false)}
           >
-            <ClipboardList size={18} /> Financial Goals
+            <ClipboardList size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Financial Goals</span>
+              <span className="db-nav-item__sub">Future You planner</span>
+            </span>
+          </Link>
+          <div className="db-sidebar__nav-divider" role="presentation" />
+          <Link
+            to={getPersonalizedPortfolioResumePath()}
+            className={`db-nav-item db-nav-item--rail db-nav-item--pp${ppNavActive ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('portfolio-insights');
+              setSidebarOpen(false);
+            }}
+          >
+            <Shield size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">AI Portfolio</span>
+              <span className="db-nav-item__sub">Quiz &amp; personalized mix</span>
+            </span>
           </Link>
         </nav>
 
@@ -663,11 +708,46 @@ function Dashboard() {
         </header>
 
         <section className="db-group">
-          <div className="db-section-heading">
-            <h3>Behavior & Portfolio Overview</h3>
+          <div
+            className={`db-section-heading db-section-heading--row${behaviorOverviewUnlocked ? '' : ' db-section-heading--locked'}`}
+          >
+            <h3>Behavior &amp; Portfolio Overview</h3>
+            {!behaviorOverviewUnlocked ? (
+              <span className="db-section-lock-pill">
+                <Lock size={14} aria-hidden />
+                Locked
+              </span>
+            ) : null}
           </div>
-          <section className="db-hero-grid" id="risk-sandbox">
-          <article className="db-card db-card--hero">
+          {!behaviorOverviewUnlocked ? (
+            <p className="db-section-lock-lead">
+              Complete the timed <strong>fear personality quiz</strong> in AI Portfolio to unlock your cockpit charts
+              and suggested mix.
+            </p>
+          ) : null}
+
+          <div className={`db-behavior-wrap${behaviorOverviewUnlocked ? '' : ' db-behavior-wrap--locked'}`}>
+            {!behaviorOverviewUnlocked ? (
+              <div className="db-behavior-lock-panel" role="region" aria-label="Unlock behavior overview">
+                <div className="db-behavior-lock-icon" aria-hidden>
+                  <Lock size={28} />
+                </div>
+                <h4 className="db-behavior-lock-title">Take the quiz to unlock</h4>
+                <p className="db-behavior-lock-copy">
+                  We use your answers and response timing to shape your investor cluster and allocation preview — then
+                  this section opens here on the dashboard.
+                </p>
+                <Link
+                  to="/personalized-portfolio?tab=quiz"
+                  className="db-behavior-unlock-btn"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  Open AI Portfolio — Personality quiz
+                </Link>
+              </div>
+            ) : null}
+            <section className="db-hero-grid" id="risk-sandbox">
+              <article className="db-card db-card--hero">
             <div className="db-card-badge">Behavioral Analysis</div>
             <div className="db-score-wrap">
               <div className="db-fear-number" style={{ color: investorInfo.color }}>
@@ -705,9 +785,9 @@ function Dashboard() {
                 </div>
               ))}
             </div>
-          </article>
+              </article>
 
-          <article className="db-card db-card--portfolio" id="portfolio-insights">
+              <article className="db-card db-card--portfolio" id="portfolio-insights">
             <div className="db-card-header">
               <h3><Target size={20} /> AI Portfolio</h3>
               <span className="db-badge">Personalized</span>
@@ -747,8 +827,9 @@ function Dashboard() {
                 </div>
               </div>
             </div>
-          </article>
-          </section>
+              </article>
+            </section>
+          </div>
         </section>
 
         <section className="db-group" id="live-markets-news">

@@ -13,18 +13,33 @@ import {
   classificationFromFearScore,
 } from '../services/userProfileService';
 import { allocationFromFearScore } from '../lib/personalizedPortfolioEngine';
+import {
+  getFirstIncompletePPTab,
+  getPPRoadmapCompletion,
+} from '../lib/personalizedPortfolioRoadmap';
 import AssessmentQuiz from './personalized/AssessmentQuiz';
 import '../styles/pp-hub.css';
 
 const TABS = ['overview', 'calculator', 'quiz', 'where', 'portfolio'];
 
+const ROADMAP_STEPS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'calculator', label: 'Fear score' },
+  { id: 'quiz', label: 'Personality quiz' },
+  { id: 'where', label: 'Where to invest' },
+  { id: 'portfolio', label: 'My portfolio' },
+];
+
 export default function PersonalizedPortfolioHub() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const wantsResume = searchParams.get('resume') === '1';
+
   const tab = useMemo(() => {
-    const t = searchParams.get('tab') || 'overview';
+    const t = tabParam || 'overview';
     return TABS.includes(t) ? t : 'overview';
-  }, [searchParams]);
+  }, [tabParam]);
 
   const [profile, setProfile] = useState(/** @type {Record<string, unknown> | null} */ (null));
   const [fearDraft, setFearDraft] = useState(50);
@@ -33,6 +48,25 @@ export default function PersonalizedPortfolioHub() {
   const [quizKey, setQuizKey] = useState(0);
 
   const assessment = profile?.dashboard_prefs?.assessment;
+
+  const roadmapDone = useMemo(() => getPPRoadmapCompletion(profile), [profile]);
+
+  useEffect(() => {
+    document.body.classList.add('dashboard-mode');
+    return () => document.body.classList.remove('dashboard-mode');
+  }, []);
+
+  /** From “AI Portfolio” / resume=1: jump to first incomplete step (or portfolio when all done). */
+  useEffect(() => {
+    if (!user?.id || !profile) return;
+    if (!wantsResume) return;
+    if (tabParam && TABS.includes(tabParam)) {
+      setSearchParams({ tab: tabParam }, { replace: true });
+      return;
+    }
+    const next = getFirstIncompletePPTab(profile);
+    setSearchParams({ tab: next }, { replace: true });
+  }, [user?.id, profile, wantsResume, tabParam, setSearchParams]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -50,12 +84,28 @@ export default function PersonalizedPortfolioHub() {
   }, [user?.id]);
 
   const setTab = useCallback(
-    (next) => {
-      const current = searchParams.get('tab') || 'overview';
+    async (next) => {
+      const current = tabParam || 'overview';
+      if (user?.id && profile && next === 'where' && !profile.dashboard_prefs?.ppRoadmap?.whereVisited) {
+        const prevRm = profile.dashboard_prefs?.ppRoadmap && typeof profile.dashboard_prefs.ppRoadmap === 'object'
+          ? profile.dashboard_prefs.ppRoadmap
+          : {};
+        await mergeDashboardPrefs(user.id, { ppRoadmap: { ...prevRm, whereVisited: true } });
+        const { data } = await fetchUserProfile(user.id);
+        if (data) setProfile(data);
+      }
+      if (user?.id && profile && next === 'portfolio' && !profile.dashboard_prefs?.ppRoadmap?.portfolioVisited) {
+        const prevRm = profile.dashboard_prefs?.ppRoadmap && typeof profile.dashboard_prefs.ppRoadmap === 'object'
+          ? profile.dashboard_prefs.ppRoadmap
+          : {};
+        await mergeDashboardPrefs(user.id, { ppRoadmap: { ...prevRm, portfolioVisited: true } });
+        const { data } = await fetchUserProfile(user.id);
+        if (data) setProfile(data);
+      }
       if (next === 'quiz' && next !== current) setQuizKey((k) => k + 1);
       setSearchParams({ tab: next });
     },
-    [searchParams, setSearchParams]
+    [user?.id, profile, tabParam, setSearchParams]
   );
 
   const saveFearScore = async () => {
@@ -81,31 +131,48 @@ export default function PersonalizedPortfolioHub() {
       });
       setFearDraft(Math.min(100, Math.max(1, Math.round(fs))));
     }
+    const { data: fresh } = await fetchUserProfile(user.id);
+    if (fresh) {
+      const prevRm =
+        fresh.dashboard_prefs?.ppRoadmap && typeof fresh.dashboard_prefs.ppRoadmap === 'object'
+          ? fresh.dashboard_prefs.ppRoadmap
+          : {};
+      await mergeDashboardPrefs(user.id, {
+        ppRoadmap: { ...prevRm, whereVisited: true, portfolioVisited: true },
+      });
+    }
     const { data } = await fetchUserProfile(user.id);
     if (data) setProfile(data);
     setTab('portfolio');
   };
 
-  const subLink = (id, label) => (
-    <button
-      type="button"
-      key={id}
-      className={tab === id ? 'pp-subnav--active' : ''}
-      onClick={() => setTab(id)}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div className="pp-hub">
-      <nav className="pp-subnav" aria-label="Personalized portfolio sections">
-        {subLink('overview', 'Overview')}
-        {subLink('calculator', 'Fear score')}
-        {subLink('quiz', 'Personality quiz')}
-        {subLink('where', 'Where to invest')}
-        {subLink('portfolio', 'My portfolio')}
-      </nav>
+    <div className="pp-hub pp-hub--split">
+      <aside className="pp-roadmap" aria-label="Personalized portfolio roadmap">
+        <p className="pp-roadmap-title">Your path</p>
+        <ol className="pp-roadmap-list">
+          {ROADMAP_STEPS.map((step, idx) => {
+            const done = roadmapDone[step.id];
+            const active = tab === step.id;
+            const isLast = idx === ROADMAP_STEPS.length - 1;
+            return (
+              <li
+                key={step.id}
+                className={`pp-roadmap-node${done ? ' pp-roadmap-node--done' : ''}${active ? ' pp-roadmap-node--active' : ''}`}
+              >
+                <span className="pp-roadmap-track" aria-hidden="true">
+                  <span className={`pp-roadmap-dot${done ? ' pp-roadmap-dot--done' : ''}`} />
+                  {!isLast ? <span className="pp-roadmap-line" /> : null}
+                </span>
+                <button type="button" className="pp-roadmap-btn" onClick={() => setTab(step.id)}>
+                  <span className="pp-roadmap-label">{step.label}</span>
+                  {done ? <span className="pp-roadmap-status">Done</span> : <span className="pp-roadmap-status">To do</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </aside>
 
       <main className="pp-hub-main">
         <Link to="/" className="pp-back">
@@ -124,7 +191,7 @@ export default function PersonalizedPortfolioHub() {
             <p className="pp-eyebrow">Welcome</p>
             <h2 className="pp-card-title">Built for {user?.user_metadata?.full_name || user?.email || 'you'}</h2>
             <p className="pp-card-desc">
-              Use the sub-navigation above: calibrate fear score manually, take the personality quiz (we time each
+              Use the roadmap on the left: calibrate fear score manually, take the personality quiz (we time each
               answer), then review where you might fit — trading vs long-term vs loans — and your generated portfolio
               mix.
             </p>

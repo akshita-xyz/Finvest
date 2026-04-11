@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import '../styles/account.css';
 
 function displayNameFromUser(user) {
@@ -69,7 +70,11 @@ const Navbar = () => {
                   <Link to="/dashboard" role="menuitem" onClick={() => setMenuOpen(false)}>
                     Dashboard
                   </Link>
-                  <Link to="/personalized-portfolio" role="menuitem" onClick={() => setMenuOpen(false)}>
+                  <Link
+                    to={getPersonalizedPortfolioResumePath()}
+                    role="menuitem"
+                    onClick={() => setMenuOpen(false)}
+                  >
                     Portfolio AI
                   </Link>
                   <Link to="/account" role="menuitem" onClick={() => setMenuOpen(false)}>
