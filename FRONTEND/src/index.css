@@ -325,9 +325,14 @@ nav {
   position: sticky;
   top: 0;
   z-index: 90;
-  background: rgba(240, 237, 230, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(8px);
-  border-bottom: 0.5px solid var(--border);
+  border: 2px solid #22c55e;
+  transition: border-color 0.3s ease;
+}
+
+nav:hover {
+  border-color: #eab308;
 }
 
 .nav-inner {
