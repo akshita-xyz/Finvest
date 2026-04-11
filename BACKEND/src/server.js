@@ -106,6 +106,44 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+/** Proxy Yahoo chart JSON (no browser CORS). Optional for production when VITE_BACKEND_URL is set. */
+app.get('/api/market/yahoo-chart', async (req, res) => {
+  try {
+    const symbol = String(req.query.symbol || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9.-]/g, '');
+    const range = String(req.query.range || '1y')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 12) || '1y';
+    const interval = String(req.query.interval || '1d')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 12) || '1d';
+    if (!symbol) {
+      res.status(400).json({ error: 'symbol required' });
+      return;
+    }
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`;
+    const upstream = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FINVEST/1.0)',
+        Accept: 'application/json',
+      },
+    });
+    if (!upstream.ok) {
+      res.status(502).json({ error: 'upstream chart request failed' });
+      return;
+    }
+    const json = await upstream.json();
+    res.json(json);
+  } catch (error) {
+    console.error('Yahoo chart proxy error:', error);
+    res.status(500).json({ error: 'chart proxy failed' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`FINVEST API server running on port ${PORT}`);
 });

@@ -331,6 +331,10 @@ nav {
   transition: border-color 0.3s ease;
 }
 
+nav:hover {
+  border-color: #eab308;
+}
+
 
 
 .nav-inner {
