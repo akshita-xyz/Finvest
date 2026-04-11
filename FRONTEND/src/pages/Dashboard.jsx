@@ -506,13 +506,7 @@ function Dashboard() {
 
   const investorInfo = getInvestorType();
   const allocation = getAllocation();
-  const confidence = Math.max(62, 92 - Math.round(Math.abs(fearScore - 52) / 2));
-  const nextStep = fearScore > 65 ? 'Reduce panic-risk with a safer mix' : 'Build conviction with simulated outcomes';
-  const dashboardStats = [
-    { label: 'Loss probability', value: '28%', tone: 'danger' },
-    { label: 'Projected 30Y value', value: '$100,627', tone: 'neutral' },
-    { label: 'AI confidence', value: `${confidence}%`, tone: 'success' },
-  ];
+
   const formatPercent = (value) => {
     if (!Number.isFinite(value)) return '--';
     const sign = value >= 0 ? '+' : '';
@@ -581,13 +575,6 @@ function Dashboard() {
           </button>
         </div>
 
-        <div className="db-sidebar__panel">
-          <div className="db-panel-label">Today&apos;s focus</div>
-          <div className="db-panel-title">{nextStep}</div>
-          <p className="db-panel-copy">
-            Contextualize possible losses before real exposure so decisions feel calm, informed, and deliberate.
-          </p>
-        </div>
 
         <nav className="db-sidebar__nav" aria-label="Dashboard sections">
           <p className="db-sidebar__nav-eyebrow">Navigate</p>
@@ -777,14 +764,7 @@ function Dashboard() {
               aria-valuemax={100}
               aria-valuenow={fearScore}
             />
-            <div className="db-mini-stats">
-              {dashboardStats.map((item) => (
-                <div key={item.label} className={`db-mini-stat ${item.tone}`}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </div>
-              ))}
-            </div>
+
               </article>
 
               <article className="db-card db-card--portfolio" id="portfolio-insights">
