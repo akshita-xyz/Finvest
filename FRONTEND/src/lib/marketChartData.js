@@ -35,13 +35,16 @@ function buildYahooChartUrls(symbol, range, interval) {
   const rangeSafe = sanitizeQueryPart(range, '1y');
   const intervalSafe = sanitizeQueryPart(interval, '1d');
   const path = `/v8/finance/chart/${encodeURIComponent(sym)}?range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
+  const qs = `symbol=${encodeURIComponent(sym)}&range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
   const urls = [];
   const backend = import.meta.env.VITE_BACKEND_URL;
   if (backend) {
     const base = String(backend).replace(/\/$/, '');
-    urls.push(
-      `${base}/api/market/yahoo-chart?symbol=${encodeURIComponent(sym)}&range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`
-    );
+    urls.push(`${base}/api/market/yahoo-chart?${qs}`);
+  }
+  // Production (e.g. Vercel): same-origin serverless proxy in /api/market/yahoo-chart.js
+  if (!import.meta.env.DEV) {
+    urls.push(`/api/market/yahoo-chart?${qs}`);
   }
   if (import.meta.env.DEV) {
     urls.push(`/__yahoo${path}`);
@@ -191,14 +194,28 @@ export async function fetchFinnhubChartOHLCV(symbol, range, interval, finnhubTok
   const sym = sanitizeSymbol(symbol);
   const token = String(finnhubToken || '').trim();
   if (!sym || !token) return null;
-  const { from, to, resolution } = mapToFinnhubCandleParams(range, interval);
-  try {
-    const url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(resolution)}&from=${from}&to=${to}&token=${encodeURIComponent(token)}`;
+  let { from, to, resolution } = mapToFinnhubCandleParams(range, interval);
+  const day = 86400;
+
+  const tryOnce = async (f, t) => {
+    const url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(resolution)}&from=${f}&to=${t}&token=${encodeURIComponent(token)}`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const json = await res.json();
     if (json.error) return null;
     return parseFinnhubCandlesToOHLCV(json, resolution);
+  };
+
+  try {
+    let out = await tryOnce(from, to);
+    if (out) return out;
+    // Free tier often returns no_data for long daily windows — retry ~3 months.
+    if (to - from > 120 * day && ['D', 'W', 'M'].includes(String(resolution).toUpperCase())) {
+      from = to - 93 * day;
+      out = await tryOnce(from, to);
+      if (out) return out;
+    }
+    return null;
   } catch {
     return null;
   }

@@ -5,5 +5,10 @@
   "installCommand": "cd FRONTEND && npm install",
   "cleanUrls": false,
   "trailingSlash": false,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

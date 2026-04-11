@@ -181,7 +181,7 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
         if (cancelled) return;
         if (!data) {
           setError(
-            'Could not load chart data. Fixes: run npm run dev or npm run preview (Yahoo /__yahoo proxy), deploy the FINVEST backend and set VITE_BACKEND_URL before build, or use a Finnhub plan that allows /stock/candle and set VITE_FINNHUB_API_KEY.'
+            'Could not load chart data. On Vercel, the app uses /api/market/yahoo-chart — redeploy after pulling the latest commit. Locally: npm run dev (/__yahoo). Optional: VITE_BACKEND_URL to an API with the same route, or Finnhub candle access + VITE_FINNHUB_API_KEY / FINNHUB_API_KEY.'
           );
           candleRef.current?.setData([]);
           volRef.current?.setData([]);
