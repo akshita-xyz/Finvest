@@ -1,6 +1,15 @@
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import {
+  classificationFromFearScore,
+  fetchUserProfile,
+  updateUserProfileFields,
+} from '../services/userProfileService';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const MotionDiv = motion.div;
 import {
   Activity,
   Shield,
@@ -8,21 +17,15 @@ import {
   MessageSquare,
   Menu,
   X,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertTriangle,
   Target,
   Zap,
-  Clock,
   Sparkles,
-  ChevronRight,
   Newspaper,
   ExternalLink,
   Search,
   ClipboardList,
 } from 'lucide-react';
 import {
-  AreaChart,
   Area,
   ComposedChart,
   Line,
@@ -36,21 +39,29 @@ import {
 } from 'recharts';
 import '../styles/dashboard.css';
 
-const mockMonteCarloData = Array.from({ length: 30 }).map((_, i) => ({
-  year: 2024 + i,
-  suggested: 10000 * Math.pow(1.08, i),
-  inflation: 10000 * Math.pow(1.03, i),
-  conservative: 10000 * Math.pow(1.05, i)
-}));
-
 const NEWS_PREVIEW_COUNT = 4;
 
+const SIDEBAR_NAV_IDS = ['risk-sandbox', 'portfolio-insights', 'live-stocks', 'news-feed'];
+
+function readNavSectionFromHash() {
+  if (typeof window === 'undefined') return 'risk-sandbox';
+  const h = (window.location.hash || '').replace(/^#/, '');
+  if (SIDEBAR_NAV_IDS.includes(h)) return h;
+  if (h === 'live-markets-news') return 'live-stocks';
+  return 'risk-sandbox';
+}
+
 function Dashboard() {
+  const { user } = useAuth();
   const FINNHUB_API_KEY = 'd7cj1gpr01qv03eshng0d7cj1gpr01qv03eshngg';
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
   const [fearScore, setFearScore] = useState(50);
+  const [profileReady, setProfileReady] = useState(false);
+  const [profileSyncNote, setProfileSyncNote] = useState('');
+  const skipProfileSaveRef = useRef(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeNavSection, setActiveNavSection] = useState(readNavSectionFromHash);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     { role: 'ai', text: "Hi! I'm your AI Portfolio Explainer. I can explain any financial concept like you're 15. What's on your mind?" }
@@ -78,14 +89,85 @@ function Dashboard() {
   const [newsModalOpen, setNewsModalOpen] = useState(false);
 
   useEffect(() => {
-    const score = localStorage.getItem('fearScore');
-    if (score) {
-      const parsedScore = parseInt(score, 10);
-      if (!isNaN(parsedScore)) {
-        setFearScore(parsedScore);
-      }
-    }
+    const onHash = () => setActiveNavSection(readNavSectionFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  // Load fear score + prefs from Supabase per user; fall back to localStorage when no row / guest.
+  useEffect(() => {
+    if (!user?.id) {
+      const score = localStorage.getItem('fearScore');
+      if (score) {
+        const parsedScore = parseInt(score, 10);
+        if (!isNaN(parsedScore)) setFearScore(parsedScore);
+      }
+      setProfileReady(true);
+      queueMicrotask(() => {
+        skipProfileSaveRef.current = false;
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setProfileReady(false);
+    skipProfileSaveRef.current = true;
+
+    (async () => {
+      const { data, error } = await fetchUserProfile(user.id);
+      if (cancelled) return;
+      if (error) {
+        setProfileSyncNote(
+          error.message?.includes('user_profiles') || error.code === '42P01'
+            ? 'Create the user_profiles table: run Finvest/supabase/sql/001_user_profiles.sql in the Supabase SQL Editor.'
+            : error.message || 'Could not load your saved profile.'
+        );
+        setProfileReady(true);
+        queueMicrotask(() => {
+          skipProfileSaveRef.current = false;
+        });
+        return;
+      }
+      if (data?.fear_score != null && Number.isFinite(Number(data.fear_score))) {
+        const n = Math.min(100, Math.max(0, Number(data.fear_score)));
+        setFearScore(n);
+        localStorage.setItem('fearScore', String(n));
+      } else {
+        const score = localStorage.getItem('fearScore');
+        if (score) {
+          const parsedScore = parseInt(score, 10);
+          if (!isNaN(parsedScore)) setFearScore(parsedScore);
+        }
+      }
+      setProfileReady(true);
+      queueMicrotask(() => {
+        skipProfileSaveRef.current = false;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Persist fear score + derived classification for custom per-user dashboard state.
+  useEffect(() => {
+    if (!profileReady || !user?.id || skipProfileSaveRef.current) return;
+    const handle = setTimeout(() => {
+      updateUserProfileFields(user.id, {
+        fear_score: fearScore,
+        classification: classificationFromFearScore(fearScore),
+      }).then(({ error }) => {
+        if (error) {
+          setProfileSyncNote(error.message || 'Could not save profile to Supabase.');
+        } else {
+          setProfileSyncNote('');
+          localStorage.setItem('fearScore', String(fearScore));
+        }
+      });
+    }, 750);
+    return () => clearTimeout(handle);
+  }, [fearScore, profileReady, user?.id]);
 
   useEffect(() => {
     const runRiskSimulation = async () => {
@@ -160,7 +242,7 @@ function Dashboard() {
           liveRupeeImpact,
         });
         setRiskSeries(points);
-      } catch (error) {
+      } catch {
         const fallbackQuote = liveStocks.find((item) => item.symbol === selectedStock);
         if (fallbackQuote && Number.isFinite(fallbackQuote.price) && fallbackQuote.price > 0) {
           const initialInvestment = 10000;
@@ -220,7 +302,7 @@ function Dashboard() {
             description: item.description,
           })) : [];
         setStockSuggestions(results);
-      } catch (e) {
+      } catch {
         setStockSuggestions([]);
       }
     }, 220);
@@ -253,7 +335,7 @@ function Dashboard() {
         });
         const stockData = await Promise.all(requests);
         setLiveStocks(stockData.filter((item) => Number.isFinite(item.price) && item.price > 0));
-      } catch (error) {
+      } catch {
         setMarketError('Unable to load live stocks right now.');
       } finally {
         setMarketLoading(false);
@@ -296,7 +378,7 @@ function Dashboard() {
           : [];
         setLiveNews(normalized);
         setNewsLastUpdated(Date.now());
-      } catch (error) {
+      } catch {
         setNewsError('Unable to load market news right now.');
       } finally {
         setNewsLoading(false);
@@ -484,18 +566,46 @@ function Dashboard() {
           </p>
         </div>
 
-        <nav className="db-sidebar__nav">
-          <a href="#risk-sandbox" className="db-nav-item active">
-            <Activity size={18} /> Risk Sandbox
+        <nav className="db-sidebar__nav" aria-label="Dashboard sections">
+          <a
+            href="#risk-sandbox"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'risk-sandbox' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('risk-sandbox');
+              setSidebarOpen(false);
+            }}
+          >
+            <Activity size={18} aria-hidden /> Risk Sandbox
           </a>
-          <a href="#portfolio-insights" className="db-nav-item">
-            <Shield size={18} /> Safety Tests
+          <a
+            href="#portfolio-insights"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'portfolio-insights' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('portfolio-insights');
+              setSidebarOpen(false);
+            }}
+          >
+            <Shield size={18} aria-hidden /> AI Portfolio
           </a>
-          <a href="#live-markets-news" className="db-nav-item" onClick={() => setSidebarOpen(false)}>
-            <TrendingUp size={18} /> Live Markets
+          <a
+            href="#live-stocks"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'live-stocks' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('live-stocks');
+              setSidebarOpen(false);
+            }}
+          >
+            <TrendingUp size={18} aria-hidden /> Live Markets
           </a>
-          <a href="#live-markets-news" className="db-nav-item" onClick={() => setSidebarOpen(false)}>
-            <MessageSquare size={18} /> News Feed
+          <a
+            href="#news-feed"
+            className={`db-nav-item db-nav-item--rail${activeNavSection === 'news-feed' ? ' active' : ''}`}
+            onClick={() => {
+              setActiveNavSection('news-feed');
+              setSidebarOpen(false);
+            }}
+          >
+            <MessageSquare size={18} aria-hidden /> News Feed
           </a>
           <Link
             to="/financial-goals"
@@ -506,9 +616,9 @@ function Dashboard() {
           </Link>
         </nav>
 
-        <div className="db-sidebar__footer">
-          <div className="db-panel-label">Live market intel</div>
-          <div className="db-market-list">
+        <div className="db-sidebar-market-rail db-sidebar-market-rail--bottom" aria-label="Live market snapshot">
+          <div className="db-sidebar-market-rail__label">Live market intel</div>
+          <div className="db-sidebar-market-rail__list">
             {marketLoading && <div className="db-market-empty">Loading live stocks...</div>}
             {!marketLoading && marketError && <div className="db-market-empty">{marketError}</div>}
             {!marketLoading && !marketError && liveStocks.slice(0, 4).map((item) => (
@@ -533,6 +643,18 @@ function Dashboard() {
             <h2 className="db-page-title">Risk Sandbox</h2>
             <p className="db-page-subtitle">
               Beautiful, high-clarity visuals for fear score, portfolio mix, and scenario-based confidence.
+              {user?.id ? (
+                <span className="db-profile-welcome">
+                  {' '}
+                  Signed in as{' '}
+                  <strong>{user.user_metadata?.full_name || user.email}</strong>
+                  {profileSyncNote ? (
+                    <span className="db-profile-sync db-profile-sync--warn"> — {profileSyncNote}</span>
+                  ) : (
+                    <span className="db-profile-sync"> — your fear score is saved to Supabase for this account.</span>
+                  )}
+                </span>
+              ) : null}
             </p>
           </div>
           <button className="db-ai-btn" onClick={() => setChatOpen(!chatOpen)}>
@@ -560,6 +682,21 @@ function Dashboard() {
             <div className="db-progress">
               <div className="db-progress-fill" style={{ width: `${fearScore}%`, backgroundColor: investorInfo.color }}></div>
             </div>
+            <label className="db-fear-slider-label" htmlFor="fear-score-slider">
+              Adjust fear score (stored per user in Supabase)
+            </label>
+            <input
+              id="fear-score-slider"
+              type="range"
+              min={0}
+              max={100}
+              value={fearScore}
+              onChange={(e) => setFearScore(Number(e.target.value))}
+              className="db-fear-slider"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={fearScore}
+            />
             <div className="db-mini-stats">
               {dashboardStats.map((item) => (
                 <div key={item.label} className={`db-mini-stat ${item.tone}`}>
@@ -614,104 +751,12 @@ function Dashboard() {
           </section>
         </section>
 
-        <section className="db-group">
-          <div className="db-section-heading">
-            <h3>Scenario & Timeline Analysis</h3>
-          </div>
-          <section className="db-lower-grid">
-          <article className="db-card db-card--wide" id="future-simulator">
-            <div className="db-card-header">
-              <div>
-                <h3><Activity size={20} /> Future Simulator</h3>
-                <p className="db-card-subtitle">1,000 market scenarios over 30 years</p>
-              </div>
-              <div className="db-prob-badges">
-                <span className="db-prob-badge profit"><ArrowUpRight size={14}/> 72% Profit</span>
-                <span className="db-prob-badge loss"><ArrowDownRight size={14}/> 28% Loss</span>
-              </div>
-            </div>
-
-            <div className="db-chart-shell">
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={mockMonteCarloData}>
-                  <defs>
-                    <linearGradient id="colorSuggested" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c8ff00" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#c8ff00" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorInflation" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="year" stroke="#3f3f46" tick={{fill: '#d4d4d8', fontSize: 11}} />
-                  <YAxis stroke="#3f3f46" tick={{fill: '#d4d4d8', fontSize: 11}} tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#101117', border: '1px solid #2b2d38', borderRadius: '12px', color: '#f8fafc' }}
-                    labelStyle={{ color: '#fff' }}
-                  />
-                  <Area type="monotone" dataKey="suggested" stroke="#c8ff00" fillOpacity={1} fill="url(#colorSuggested)" name="Your Portfolio" strokeWidth={2} />
-                  <Area type="monotone" dataKey="inflation" stroke="#ef4444" fillOpacity={1} fill="url(#colorInflation)" name="Inflation Impact" strokeWidth={1} strokeDasharray="5 5" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="db-scenario-box">
-              <div className="db-scenario-info">
-                <AlertTriangle size={18} className="db-warning-icon" />
-                <div>
-                  <div className="db-scenario-title">Market Crash Simulator</div>
-                  <div className="db-scenario-desc">See how your portfolio performs in a 2008-style crisis</div>
-                </div>
-              </div>
-              <button className="db-scenario-btn">Test Scenario</button>
-            </div>
-          </article>
-
-          <article className="db-card db-card--side">
-            <div className="db-card-header">
-              <h3><Clock size={20} /> Timeline Projections</h3>
-            </div>
-            <div className="db-timeline-grid">
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">5yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 5)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">10yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 10)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item">
-                <div className="db-timeline-year">20yr</div>
-                <div className="db-timeline-value" style={{ color: investorInfo.color }}>
-                  ${(10000 * Math.pow(1.08, 20)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-              <div className="db-timeline-item highlight">
-                <div className="db-timeline-year">30yr</div>
-                <div className="db-timeline-value">
-                  ${(10000 * Math.pow(1.08, 30)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </div>
-              </div>
-            </div>
-            <div className="db-side-note">
-              <ChevronRight size={16} />
-              <span>Use these projections to compare safe, moderate, and high-risk paths side by side.</span>
-            </div>
-          </article>
-          </section>
-        </section>
-
         <section className="db-group" id="live-markets-news">
           <div className="db-section-heading">
             <h3>Live Markets & News Tracking</h3>
           </div>
           <section className="db-live-section">
-          <article className="db-card">
+          <article className="db-card" id="live-stocks">
             <div className="db-card-header">
               <h3><TrendingUp size={20} /> Live Stocks Tracker</h3>
               <span className="db-card-subtitle">Auto-refresh every 30 seconds</span>
@@ -740,7 +785,7 @@ function Dashboard() {
             )}
           </article>
 
-          <article className="db-card">
+          <article className="db-card" id="news-feed">
             <div className="db-card-header">
               <h3><Newspaper size={20} /> Live Financial News</h3>
               <span className="db-card-subtitle">
@@ -951,7 +996,7 @@ function Dashboard() {
 
       <AnimatePresence>
         {chatOpen && (
-          <motion.div 
+          <MotionDiv
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -983,7 +1028,7 @@ function Dashboard() {
               />
               <button type="submit">Send</button>
             </form>
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
 

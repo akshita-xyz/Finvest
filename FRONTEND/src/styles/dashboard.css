@@ -23,8 +23,9 @@ body.dashboard-mode #dot {
   width: 290px;
   position: fixed;
   inset: 0 auto 0 0;
-  background: #ffffff;
-  border-right: 1px solid #d1d5db;
+  /* Match page chrome — avoids a separate “warm” strip vs main */
+  background: #f3f5f9;
+  border-right: 1px solid #e2e8f0;
   padding: 28px 22px;
   display: flex;
   flex-direction: column;
@@ -33,7 +34,7 @@ body.dashboard-mode #dot {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f8fafc;
+  scrollbar-color: #cbd5e1 #e2e8f0;
 }
 
 .db-sidebar::-webkit-scrollbar {
@@ -41,7 +42,7 @@ body.dashboard-mode #dot {
 }
 
 .db-sidebar::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: #e2e8f0;
 }
 
 .db-sidebar::-webkit-scrollbar-thumb {
@@ -73,12 +74,13 @@ body.dashboard-mode #dot {
   line-height: 1.5;
 }
 
-.db-sidebar__panel,
-.db-sidebar__footer {
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  background: #f9fafb;
-  padding: 18px;
+.db-sidebar__panel {
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 4px 18px 0;
+  margin-bottom: 4px;
 }
 
 .db-panel-label {
@@ -107,45 +109,85 @@ body.dashboard-mode #dot {
 .db-sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
   flex: 1;
-  padding: 8px 0;
-  border-top: 1px solid #d1d5db;
-  border-bottom: 1px solid #d1d5db;
+  min-height: 0;
+  padding: 8px 0 12px;
+  border-top: none;
+  border-bottom: none;
 }
 
-.db-nav-item {
+/* Rail nav: no pill boxes — left accent + light hover */
+.db-nav-item--rail {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 24px;
+  gap: 10px;
+  padding: 11px 12px 11px 10px;
+  margin: 0 2px;
+  border-radius: 8px;
   text-decoration: none;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  transition: 0.22s ease;
-  min-height: 74px;
-  font-size: 0.95rem;
+  color: #475569;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
   font-weight: 600;
+  min-height: unset;
+  border-left: 3px solid transparent;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-.db-nav-item:hover,
-.db-nav-item.active {
-  background: #fefce8;
-  border-color: #fde047;
-  color: #111827;
+.db-nav-item--rail:hover {
+  background: rgba(37, 99, 235, 0.06);
+  color: #1e293b;
 }
 
-.db-nav-item.active {
-  box-shadow: 0 0 0 1px #fde047 inset;
+.db-nav-item--rail.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  border-left-color: #2563eb;
   font-weight: 700;
 }
 
-.db-nav-item svg {
-  width: 22px;
-  height: 22px;
-  color: #374151;
+.db-nav-item--rail svg {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.db-nav-item--rail.active svg {
+  color: #1d4ed8;
+}
+
+.db-nav-item--rail:hover svg {
+  color: #334155;
+}
+
+/* Live market snapshot pinned to bottom of sidebar */
+.db-sidebar-market-rail--bottom {
+  margin-top: auto;
+  flex-shrink: 0;
+  padding: 16px 0 0;
+  margin-bottom: 0;
+  border-top: 1px solid #e2e8f0;
+  border-left: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.db-sidebar-market-rail__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.db-sidebar-market-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .db-market-list {
@@ -1154,4 +1196,38 @@ body.dashboard-mode #dot {
     padding: 20px;
     border-radius: 22px;
   }
+}
+
+/* Per-user profile (Supabase) */
+.db-profile-welcome {
+  display: block;
+  margin-top: 0.5rem;
+  color: #4b5563;
+  font-size: 0.92rem;
+}
+
+.db-profile-sync {
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.db-profile-sync--warn {
+  color: #b45309;
+}
+
+.db-fear-slider-label {
+  display: block;
+  margin-top: 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.db-fear-slider {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: #2563eb;
+  cursor: pointer;
 }

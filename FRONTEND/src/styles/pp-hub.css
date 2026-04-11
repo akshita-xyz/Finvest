@@ -1,0 +1,249 @@
+/* Personalized Portfolio hub — matches landing nav palette (paper / ink / accent) */
+
+.pp-hub {
+  min-height: 100vh;
+  background: var(--paper, #f0ede6);
+  color: var(--ink, #080808);
+  font-family: var(--B, system-ui, sans-serif);
+}
+
+.pp-hub a {
+  color: inherit;
+}
+
+.pp-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 12px clamp(16px, 4vw, 40px);
+  max-width: 1200px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.11));
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.pp-subnav a,
+.pp-subnav button {
+  font-family: var(--M, monospace);
+  font-size: clamp(0.55rem, 0.85vw, 0.65rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--muted, #6a6a6a);
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.pp-subnav a:hover,
+.pp-subnav button:hover,
+.pp-subnav a:focus-visible,
+.pp-subnav button:focus-visible {
+  color: var(--ink);
+  outline: none;
+}
+
+.pp-subnav a.pp-subnav--active,
+.pp-subnav button.pp-subnav--active {
+  color: var(--ink);
+  border-bottom-color: var(--hot, #ff4d1c);
+}
+
+.pp-hub-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 40px) 64px;
+}
+
+.pp-hub-header {
+  margin-bottom: 28px;
+}
+
+.pp-hub-title {
+  font-family: var(--D, sans-serif);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.pp-hub-lead {
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 62ch;
+}
+
+.pp-back {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.pp-back:hover {
+  color: var(--hot);
+}
+
+.pp-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(20px, 3vw, 28px);
+  margin-bottom: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.04);
+}
+
+.pp-eyebrow {
+  font-family: var(--M);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.pp-card-title {
+  font-family: var(--D);
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+  margin-bottom: 8px;
+}
+
+.pp-card-desc {
+  color: #444;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.pp-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.pp-options {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pp-option-btn {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+  font-family: var(--B);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pp-option-btn:hover {
+  border-color: var(--ink);
+  background: #fff;
+}
+
+.pp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pp-stat {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f4f4f0;
+  border: 1px solid #e8e8e4;
+}
+
+.pp-stat span {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.pp-stat strong {
+  font-size: 1.35rem;
+  font-family: var(--D);
+}
+
+.pp-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.pp-bar-row span {
+  width: 72px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pp-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e5e0;
+  overflow: hidden;
+}
+
+.pp-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent, #c8ff00);
+  font-style: normal;
+}
+
+.pp-slider {
+  width: 100%;
+  margin: 12px 0;
+  accent-color: var(--ink);
+}
+
+.pp-btn-primary {
+  font-family: var(--M);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.pp-btn-primary:hover {
+  background: var(--hot);
+  color: #fff;
+}
+
+.pp-quote {
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  margin: 12px 0;
+  background: rgba(200, 255, 0, 0.12);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.pp-muted {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}

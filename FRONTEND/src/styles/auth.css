@@ -1,0 +1,169 @@
+/**
+ * Styles for login / signup / protected-route loading.
+ * Uses the same CSS variables as the rest of the app (see index.css :root).
+ */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--ink, #080808);
+  font-family: var(--B, system-ui, sans-serif);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem 2.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 20, 0.92);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.auth-card--narrow {
+  max-width: 320px;
+  text-align: center;
+}
+
+.auth-brand {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--muted, #6a6a6a);
+  text-decoration: none;
+}
+
+.auth-brand:hover {
+  color: var(--accent, #c8ff00);
+}
+
+.auth-title {
+  font-family: var(--D, var(--B));
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  color: var(--white, #fafaf8);
+  margin-bottom: 0.35rem;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--muted, #6a6a6a);
+  line-height: 1.45;
+  margin-bottom: 1.5rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auth-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--paper, #f0ede6);
+  margin-top: 0.5rem;
+}
+
+.auth-optional {
+  font-weight: 400;
+  color: var(--muted, #6a6a6a);
+}
+
+.auth-input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--white, #fafaf8);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.auth-input:focus {
+  outline: 2px solid var(--accent, #c8ff00);
+  outline-offset: 1px;
+}
+
+.auth-hint {
+  font-size: 0.75rem;
+  color: var(--muted, #6a6a6a);
+  margin-bottom: 0.5rem;
+}
+
+.auth-submit {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: var(--accent, #c8ff00);
+  color: var(--ink, #080808);
+}
+
+.auth-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.auth-submit:not(:disabled):hover {
+  filter: brightness(1.05);
+}
+
+.auth-banner {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.auth-banner--error {
+  background: rgba(255, 77, 28, 0.12);
+  border: 1px solid rgba(255, 77, 28, 0.35);
+  color: #ffb4a1;
+}
+
+.auth-banner--warn {
+  background: rgba(200, 255, 0, 0.08);
+  border: 1px solid rgba(200, 255, 0, 0.25);
+  color: #dfe89a;
+}
+
+.auth-banner--ok {
+  background: rgba(120, 200, 120, 0.12);
+  border: 1px solid rgba(120, 200, 120, 0.35);
+  color: #b8e6b8;
+}
+
+.auth-code {
+  font-family: var(--M, ui-monospace, monospace);
+  font-size: 0.8em;
+  word-break: break-all;
+}
+
+.auth-muted {
+  font-size: 0.875rem;
+  color: var(--muted, #6a6a6a);
+}
+
+.auth-muted a {
+  color: var(--accent, #c8ff00);
+  text-decoration: none;
+}
+
+.auth-muted a:hover {
+  text-decoration: underline;
+}
+
+.auth-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
