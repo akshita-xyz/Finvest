@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity,
@@ -18,6 +19,7 @@ import {
   Newspaper,
   ExternalLink,
   Search,
+  ClipboardList,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -495,6 +497,13 @@ function Dashboard() {
           <a href="#live-markets-news" className="db-nav-item" onClick={() => setSidebarOpen(false)}>
             <MessageSquare size={18} /> News Feed
           </a>
+          <Link
+            to="/financial-goals"
+            className="db-nav-item"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ClipboardList size={18} /> Financial Goals
+          </Link>
         </nav>
 
         <div className="db-sidebar__footer">
