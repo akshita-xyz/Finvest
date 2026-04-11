@@ -52,7 +52,7 @@ function readNavSectionFromHash() {
 function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
-  const FINNHUB_API_KEY = 'd7cj1gpr01qv03eshng0d7cj1gpr01qv03eshngg';
+  const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY || '';
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
   const [fearScore, setFearScore] = useState(50);
@@ -1134,7 +1134,7 @@ function Dashboard() {
                   </p>
                 </div>
 
-                <RiskCandlestickChart symbol={riskResult.symbol} />
+                <RiskCandlestickChart symbol={riskResult.symbol} finnhubToken={FINNHUB_API_KEY} />
 
                 <div className="db-risk-grid">
                   <div className="db-risk-card">
