@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Cursor from '../components/Cursor'
 import Intro from '../components/Intro'
 import Navbar from '../components/Navbar'
@@ -15,10 +15,25 @@ import CtaBand from '../components/CtaBand'
 import Footer from '../components/Footer'
 import Modals from '../components/Modals'
 
+const INTRO_ONCE_KEY = 'finvest_intro_tagline_seen_v1';
+const LANDING_SCROLL_KEY = 'finvest_landing_scroll_y_v1';
+
 function LandingPage() {
   const [introStarted] = useState(true);
-  const [introComplete, setIntroComplete] = useState(false);
+  const [introComplete, setIntroComplete] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(INTRO_ONCE_KEY) === '1';
+  });
   const [activeModal, setActiveModal] = useState(null);
+
+  const handleIntroDone = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(INTRO_ONCE_KEY, '1');
+    } catch {
+      /* ignore quota / private mode */
+    }
+    setIntroComplete(true);
+  }, []);
 
   useEffect(() => {
     // Parallax logic
@@ -87,6 +102,39 @@ function LandingPage() {
 
   useEffect(() => {
     if (!introComplete) return;
+    let y = 0;
+    try {
+      y = parseInt(String(window.sessionStorage.getItem(LANDING_SCROLL_KEY) || '0'), 10) || 0;
+    } catch {
+      y = 0;
+    }
+    if (y > 0) {
+      requestAnimationFrame(() => window.scrollTo({ top: y, left: 0, behavior: 'auto' }));
+    }
+  }, [introComplete]);
+
+  useEffect(() => {
+    if (!introComplete) return;
+    let t;
+    const onScroll = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => {
+        try {
+          window.sessionStorage.setItem(LANDING_SCROLL_KEY, String(window.scrollY));
+        } catch {
+          /* ignore */
+        }
+      }, 120);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [introComplete]);
+
+  useEffect(() => {
+    if (!introComplete) return;
 
     // Scroll Reveal logic
     const ob = new IntersectionObserver(
@@ -107,7 +155,7 @@ function LandingPage() {
       <Cursor />
       
       {introStarted && !introComplete && (
-        <Intro onComplete={() => setIntroComplete(true)} />
+        <Intro onComplete={handleIntroDone} />
       )}
 
       <div id="site" className={introComplete ? "show" : ""} style={introComplete ? { display: 'block' } : { display: 'none' }}>
