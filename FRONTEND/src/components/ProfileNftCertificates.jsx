@@ -119,10 +119,10 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
         <article className={`account-nft-card${portfolioEarned ? ' account-nft-card--open' : ''}`}>
           <div className="account-nft-card-head">
             {portfolioEarned ? <Award size={22} aria-hidden /> : <Lock size={22} aria-hidden />}
-            <h3>Portfolio personality</h3>
+            <h3>Decode Your Finance Self</h3>
           </div>
           <p className="account-nft-card-desc">
-            Complete the timed <strong>AI Portfolio</strong> personality quiz — your cluster and allocation are saved
+            Complete the timed <strong>Decode Your Finance Self</strong> personality quiz — your cluster and allocation are saved
             to your profile.
           </p>
           {portfolioEarned ? (
@@ -135,7 +135,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
                   : ''}
             </p>
           ) : (
-            <p className="account-nft-locked">Locked — finish the quiz in Portfolio AI.</p>
+            <p className="account-nft-locked">Locked — finish the quiz in Decode Your Finance Self.</p>
           )}
         </article>
 
@@ -145,7 +145,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
             <h3>Investing mindset</h3>
           </div>
           <p className="account-nft-card-desc">
-            Finish the <strong>Emotion testing</strong> flow on your dashboard — we save a certificate flag to your
+            Finish the <strong>Emotional Readiness Test</strong> flow on your dashboard — we save a certificate flag to your
             account when you are signed in.
           </p>
           {emotionEarned ? (
@@ -155,7 +155,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
               {nft.emotionArchetype ? <span className="account-nft-pill">{String(nft.emotionArchetype)}</span> : null}
             </p>
           ) : (
-            <p className="account-nft-locked">Locked — complete Emotion testing on the Dashboard.</p>
+            <p className="account-nft-locked">Locked — complete the Emotional Readiness Test on the Dashboard.</p>
           )}
         </article>
       </div>

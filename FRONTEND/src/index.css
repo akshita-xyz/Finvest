@@ -436,6 +436,13 @@ body.cc #cur {
   outline: none;
 }
 
+/* Plain “Finvest” word in navbar (sentence case, no orbit) */
+.nav-landing__logo--text {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
 .nav-landing__track {
   position: relative;
   display: flex;
@@ -1775,7 +1782,7 @@ canvas#vc {
 }
 
 .gs-form-wrap::before {
-  content: "RISK";
+  content: "FINVEST";
   position: absolute;
   bottom: -10px;
   right: -10px;

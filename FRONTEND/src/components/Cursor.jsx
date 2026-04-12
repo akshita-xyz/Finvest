@@ -7,10 +7,10 @@ const Cursor = () => {
 
   const updateCursorColor = (y, cur, dot) => {
     const darkSections = [
-      '#hack-problem',
+      '#about',
       '#hack-approach',
       '#hack-workflow',
-      '#hack-selling',
+      '#why-us',
       '#hack-project',
       '#hack-footer',
     ];

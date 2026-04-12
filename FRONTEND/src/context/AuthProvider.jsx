@@ -30,7 +30,7 @@ function notConfiguredError() {
   const synthetic = {
     name: 'ConfigError',
     message:
-      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to FRONTEND/.env (see .env.example).',
+      'Supabase is not configured. Add VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY or SUPABASE_URL/SUPABASE_ANON_KEY to FRONTEND/.env (see .env.example).',
   };
   return synthetic;
 }

@@ -30,6 +30,9 @@ Young users fear investing due to the fear of loss. FINVEST contextualizes risk 
 ```bash
 cd FRONTEND
 npm install
+# Create FRONTEND/.env with either:
+#   VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+#   or SUPABASE_URL + SUPABASE_ANON_KEY
 npm run dev
 ```
 

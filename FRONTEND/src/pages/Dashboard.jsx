@@ -828,7 +828,7 @@ function Dashboard() {
           >
             <Brain size={18} aria-hidden />
             <span className="db-nav-item__text">
-              <span className="db-nav-item__title">Emotion Testing</span>
+              <span className="db-nav-item__title">Emotional Readiness Test</span>
               <span className="db-nav-item__sub">Mindset before investing</span>
             </span>
           </a>
@@ -854,7 +854,7 @@ function Dashboard() {
           >
             <Shield size={18} aria-hidden />
             <span className="db-nav-item__text">
-              <span className="db-nav-item__title">AI Portfolio</span>
+              <span className="db-nav-item__title">Decode Your Finance Self</span>
               <span className="db-nav-item__sub">Quiz &amp; personalized mix</span>
             </span>
           </Link>
@@ -920,7 +920,7 @@ function Dashboard() {
           </div>
           {!behaviorOverviewUnlocked ? (
             <p className="db-section-lock-lead">
-              Complete the timed <strong>fear personality quiz</strong> in AI Portfolio to unlock your cockpit charts
+              Complete the timed <strong>fear personality quiz</strong> in Decode Your Finance Self to unlock your cockpit charts
               and suggested mix.
             </p>
           ) : null}
@@ -941,7 +941,7 @@ function Dashboard() {
                   className="db-behavior-unlock-btn"
                   onClick={() => setSidebarOpen(false)}
                 >
-                  Open AI Portfolio — Personality quiz
+                  Open Decode Your Finance Self — personality quiz
                 </Link>
               </div>
             ) : null}
@@ -981,7 +981,7 @@ function Dashboard() {
 
               <article className="db-card db-card--portfolio" id="portfolio-insights">
             <div className="db-card-header">
-              <h3><Target size={20} /> AI Portfolio</h3>
+              <h3><Target size={20} /> Decode Your Finance Self</h3>
               <span className="db-badge">Personalized</span>
             </div>
             <div className="db-portfolio-layout">
@@ -1293,7 +1293,7 @@ function Dashboard() {
 
         <section className="db-group" id="emotion-testing">
           <div className="db-section-heading">
-            <h3>Emotion Testing</h3>
+            <h3>Emotional Readiness Test</h3>
           </div>
           <article className="db-card db-card--emotion">
             <div className="db-card-header">
@@ -1486,7 +1486,7 @@ function Dashboard() {
             <div className="db-chat-header">
               <div className="db-chat-status">
                 <span className="db-status-dot"></span>
-                <span>Portfolio AI</span>
+                <span>Decode Your Finance Self</span>
               </div>
               <button onClick={() => setChatOpen(false)} aria-label="Close AI chat"><X size={18} /></button>
             </div>

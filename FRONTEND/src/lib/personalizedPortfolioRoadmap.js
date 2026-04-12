@@ -36,7 +36,7 @@ export function getFirstIncompletePPTab(profile) {
 }
 
 /**
- * Entry URL when user should land on the next incomplete step (e.g. from Dashboard “AI Portfolio”).
+ * Entry URL when user should land on the next incomplete step (e.g. from Dashboard “Decode Your Finance Self”).
  */
 export function getPersonalizedPortfolioResumePath() {
   return '/personalized-portfolio?resume=1';

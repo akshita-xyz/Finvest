@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, AlertCircle, Compass, ListOrdered, Medal, Rocket } from 'lucide-react';
+import { Home, Info, ListOrdered, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import '../styles/account.css';
 
 const NAV_ITEMS = [
   { id: 'hero', href: '#hero', label: 'Home', Icon: Home },
-  { id: 'hack-problem', href: '#hack-problem', label: 'Problem', Icon: AlertCircle },
-  { id: 'hack-approach', href: '#hack-approach', label: 'Approach', Icon: Compass },
+  { id: 'about', href: '#about', label: 'About', Icon: Info },
   { id: 'hack-workflow', href: '#hack-workflow', label: 'Workflow', Icon: ListOrdered },
-  { id: 'hack-selling', href: '#hack-selling', label: 'Pitch', Icon: Medal },
-  { id: 'hack-project', href: '#hack-project', label: 'Project', Icon: Rocket },
+  { id: 'why-us', href: '#why-us', label: 'Why us', Icon: Sparkles },
 ];
 
 const NAV_IDS = NAV_ITEMS.map((item) => item.id);
@@ -115,8 +112,8 @@ const Navbar = () => {
       <div className="nav-landing__wrap">
         <div className="nav-landing__glass">
           <div className="nav-landing__inner">
-            <button type="button" className="nav-landing__logo" onClick={scrollToTop}>
-              Risk
+            <button type="button" className="nav-landing__logo nav-landing__logo--text" onClick={scrollToTop} aria-label="Finvest — scroll to top">
+              Finvest
             </button>
 
             <div
@@ -179,18 +176,11 @@ const Navbar = () => {
                   </button>
                   {menuOpen ? (
                     <div className="nav-account-menu nav-landing__account-menu" role="menu">
+                      <Link to="/account" role="menuitem" onClick={() => setMenuOpen(false)}>
+                        My profile
+                      </Link>
                       <Link to="/dashboard" role="menuitem" onClick={() => setMenuOpen(false)}>
                         Dashboard
-                      </Link>
-                      <Link
-                        to={getPersonalizedPortfolioResumePath()}
-                        role="menuitem"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        Portfolio AI
-                      </Link>
-                      <Link to="/account" role="menuitem" onClick={() => setMenuOpen(false)}>
-                        Account &amp; photo
                       </Link>
                       <button
                         type="button"

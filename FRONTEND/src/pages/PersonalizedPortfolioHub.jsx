@@ -56,7 +56,7 @@ export default function PersonalizedPortfolioHub() {
     return () => document.body.classList.remove('dashboard-mode');
   }, []);
 
-  /** From “AI Portfolio” / resume=1: jump to first incomplete step (or portfolio when all done). */
+  /** From “Decode Your Finance Self” / resume=1: jump to first incomplete step (or portfolio when all done). */
   useEffect(() => {
     if (!user?.id || !profile) return;
     if (!wantsResume) return;
@@ -154,7 +154,7 @@ export default function PersonalizedPortfolioHub() {
 
   return (
     <div className="pp-hub pp-hub--split">
-      <aside className="pp-roadmap" aria-label="Personalized portfolio roadmap">
+      <aside className="pp-roadmap" aria-label="Decode Your Finance Self roadmap">
         <p className="pp-roadmap-title">Your path</p>
         <ol className="pp-roadmap-list">
           {ROADMAP_STEPS.map((step, idx) => {
@@ -185,7 +185,7 @@ export default function PersonalizedPortfolioHub() {
           ← Back to home
         </Link>
         <header className="pp-hub-header">
-          <h1 className="pp-hub-title">Personalized portfolio</h1>
+          <h1 className="pp-hub-title">Decode Your Finance Self</h1>
           <p className="pp-hub-lead">
             Timed questions, hesitation signals, and a simple ML-style cluster model shape your fear score (1–100),
             investor persona, and a suggested allocation — saved to your account for this Finvest prototype.

@@ -21,8 +21,9 @@ const yahooChartProxy = {
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
-  // Expose FINNHUB_* so Vercel env name `FINNHUB_API_KEY` works (Vite only sends VITE_* to the client by default).
-  envPrefix: ['VITE_', 'FINNHUB_'],
+  // Expose legacy non-VITE env names used elsewhere in this repo so hosted and local auth
+  // still work even when Supabase/Finnhub vars were entered under the backend-style names.
+  envPrefix: ['VITE_', 'FINNHUB_', 'SUPABASE_'],
   plugins: [react()],
   server: {
     proxy: {

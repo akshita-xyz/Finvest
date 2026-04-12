@@ -1,6 +1,6 @@
 /**
  * @fileoverview Single account hub: sign-in + sign-up (toggle), and when signed in —
- * links to Dashboard & Portfolio AI, profile photo (URL), display name, sign out.
+ * links to dashboard tools, profile photo (URL), display name, sign out.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -24,8 +24,8 @@ function humanizeAuthError(message) {
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
     return (
       'Cannot reach Supabase. In Supabase Dashboard → Project Settings → API, copy the exact ' +
-      'Project URL and anon (public) key into FRONTEND/.env as VITE_SUPABASE_URL and ' +
-      'VITE_SUPABASE_ANON_KEY, save, then restart the dev server. A typo in the URL or key often causes this.'
+      'Project URL and anon (public) key into FRONTEND/.env as VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY ' +
+      '(or SUPABASE_URL/SUPABASE_ANON_KEY), save, then restart the dev server. A typo in the URL or key often causes this.'
     );
   }
   return message;
@@ -192,85 +192,104 @@ export default function AccountPage() {
     const avatar = user.user_metadata?.avatar_url;
 
     return (
-      <AuthLayout title={`${name}'s account`} subtitle="Dashboard, Portfolio AI, and your profile in one place.">
+      <AuthLayout
+        title={`${name}'s account`}
+        subtitle="Grow your wealth and your edge, disciplined finance, thoughtful tech, one steady place to build."
+        pageClassName="auth-page--account"
+        cardClassName="auth-card--account"
+      >
         <div className="account-hub">
           {continueTo ? (
             <p className="auth-banner auth-banner--ok" role="status">
               Next: <Link to={continueTo}>Continue to the page you tried to open</Link>
             </p>
           ) : null}
-          <div className="account-avatar-block">
-            <div className="account-avatar-wrap">
-              {avatar ? (
-                <img src={avatar} alt="" className="account-avatar-img" />
-              ) : (
-                <span className="account-avatar-fallback" aria-hidden>
-                  {name.slice(0, 1).toUpperCase()}
-                </span>
-              )}
+          <section className="account-panel account-panel--hero">
+            <div className="account-avatar-block">
+              <div className="account-avatar-wrap">
+                {avatar ? (
+                  <img src={avatar} alt="" className="account-avatar-img" />
+                ) : (
+                  <span className="account-avatar-fallback" aria-hidden>
+                    {name.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <form className="account-profile-form" onSubmit={saveProfile}>
+                <label className="auth-label" htmlFor="acc-display-name">
+                  Display name
+                </label>
+                <input
+                  id="acc-display-name"
+                  className="auth-input"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  autoComplete="name"
+                />
+                <label className="auth-label" htmlFor="acc-avatar-url">
+                  Profile picture
+                </label>
+                <p className="auth-hint">Paste an image URL, or choose a small file (under ~400KB).</p>
+                <input
+                  id="acc-avatar-url"
+                  className="auth-input"
+                  value={avatarUrlDraft}
+                  onChange={(e) => setAvatarUrlDraft(e.target.value)}
+                  placeholder="https://…"
+                />
+                <label className="auth-label" htmlFor="acc-avatar-file">
+                  Or upload
+                </label>
+                <input id="acc-avatar-file" type="file" accept="image/*" className="account-file-input" onChange={handleAvatarFile} />
+                {profileMsg ? (
+                  <p className={profileMsg.includes('saved') ? 'auth-banner auth-banner--ok' : 'auth-banner auth-banner--error'} role="status">
+                    {profileMsg}
+                  </p>
+                ) : null}
+                <button type="submit" className="auth-submit" disabled={profileSaving || !configured}>
+                  {profileSaving ? 'Saving…' : 'Save profile'}
+                </button>
+              </form>
             </div>
-            <form className="account-profile-form" onSubmit={saveProfile}>
-              <label className="auth-label" htmlFor="acc-display-name">
-                Display name
-              </label>
-              <input
-                id="acc-display-name"
-                className="auth-input"
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                autoComplete="name"
-              />
-              <label className="auth-label" htmlFor="acc-avatar-url">
-                Profile picture
-              </label>
-              <p className="auth-hint">Paste an image URL, or choose a small file (under ~400KB).</p>
-              <input
-                id="acc-avatar-url"
-                className="auth-input"
-                value={avatarUrlDraft}
-                onChange={(e) => setAvatarUrlDraft(e.target.value)}
-                placeholder="https://…"
-              />
-              <label className="auth-label" htmlFor="acc-avatar-file">
-                Or upload
-              </label>
-              <input id="acc-avatar-file" type="file" accept="image/*" className="account-file-input" onChange={handleAvatarFile} />
-              {profileMsg ? (
-                <p className={profileMsg.includes('saved') ? 'auth-banner auth-banner--ok' : 'auth-banner auth-banner--error'} role="status">
-                  {profileMsg}
-                </p>
-              ) : null}
-              <button type="submit" className="auth-submit" disabled={profileSaving || !configured}>
-                {profileSaving ? 'Saving…' : 'Save profile'}
-              </button>
-            </form>
-          </div>
+          </section>
 
-          <div className="account-links">
-            <Link to="/dashboard" className="account-link-card">
-              <strong>Dashboard</strong>
-              <span>Live markets, fear score cockpit, and tools.</span>
-            </Link>
-            <Link to={getPersonalizedPortfolioResumePath()} className="account-link-card account-link-card--accent">
-              <strong>Portfolio AI</strong>
-              <span>Timed quiz, investor cluster, and personalized allocation — part of your account.</span>
-            </Link>
-          </div>
+          <section className="account-panel">
+            <div className="account-links">
+              <Link to="/dashboard" className="account-link-card">
+                <strong>Dashboard</strong>
+                <span>Live markets, fear score cockpit, and tools.</span>
+              </Link>
+              <Link to={getPersonalizedPortfolioResumePath()} className="account-link-card account-link-card--accent">
+                <strong>Decode Your Finance Self</strong>
+                <span>Timed quiz, investor cluster, and personalized allocation, part of your account.</span>
+              </Link>
+              <Link to="/dashboard#emotion-testing" className="account-link-card">
+                <strong>Emotional Readiness Test</strong>
+                <span>Mindset quiz on your dashboard, archetype, readiness, and investing habits.</span>
+              </Link>
+              <Link to="/financial-goals" className="account-link-card">
+                <strong>Financial goals</strong>
+                <span>Milestones, timelines, and savings paths tailored to what you are building.</span>
+              </Link>
+            </div>
+          </section>
 
-          <ProfileNftCertificates
-            dashboardPrefs={profileRow?.dashboard_prefs}
-            walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
-            onSaveWallet={async (address) => {
-              const { error, user: u } = await updateUserMetadata({ wallet_address: address });
-              if (error) return { error };
-              if (u) await ensureUserProfile(u);
-              if (user?.id) {
-                const { data } = await fetchUserProfile(user.id);
-                if (data) setProfileRow(data);
-              }
-              return { error: null };
-            }}
-          />
+          <section className="account-panel">
+            <ProfileNftCertificates
+              dashboardPrefs={profileRow?.dashboard_prefs}
+              walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
+              onSaveWallet={async (address) => {
+                const { error, user: u } = await updateUserMetadata({ wallet_address: address });
+                if (error) return { error };
+                if (u) await ensureUserProfile(u);
+                if (user?.id) {
+                  const { data } = await fetchUserProfile(user.id);
+                  if (data) setProfileRow(data);
+                }
+                return { error: null };
+              }}
+            />
+          </section>
 
           <div className="account-actions">
             <Link to="/" className="account-text-link">
@@ -306,8 +325,8 @@ export default function AccountPage() {
     return (
       <AuthLayout title="Account" subtitle="Configure Supabase to use this page.">
         <p className="auth-banner auth-banner--warn" role="alert">
-          Add <code className="auth-code">VITE_SUPABASE_URL</code> and <code className="auth-code">VITE_SUPABASE_ANON_KEY</code> to{' '}
-          <code className="auth-code">FRONTEND/.env</code>.
+          Add <code className="auth-code">VITE_SUPABASE_URL</code>/<code className="auth-code">VITE_SUPABASE_ANON_KEY</code> or{' '}
+          <code className="auth-code">SUPABASE_URL</code>/<code className="auth-code">SUPABASE_ANON_KEY</code> to <code className="auth-code">FRONTEND/.env</code>.
         </p>
         <Link to="/" className="auth-muted">
           ← Home

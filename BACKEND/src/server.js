@@ -187,7 +187,7 @@ app.post('/chat', async (req, res) => {
     }
 
     const systemParts = [
-      'You are Finvest Portfolio AI: explain investing and portfolio ideas in clear, friendly language (teen-friendly when helpful).',
+      'You are Finvest “Decode Your Finance Self”: explain investing and portfolio ideas in clear, friendly language (teen-friendly when helpful).',
       'Do not claim real-time market prices unless given in the conversation. No personalized investment advice as a fiduciary — stay educational.',
       `Client hint userType: ${userType}.`,
     ];

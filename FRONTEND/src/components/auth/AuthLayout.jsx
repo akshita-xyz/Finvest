@@ -14,12 +14,14 @@ import '../../styles/auth.css';
  *   subtitle?: string;
  *   children: React.ReactNode;
  *   footer?: React.ReactNode;
+ *   pageClassName?: string;
+ *   cardClassName?: string;
  * }} props
  */
-export default function AuthLayout({ title, subtitle, children, footer }) {
+export default function AuthLayout({ title, subtitle, children, footer, pageClassName = '', cardClassName = '' }) {
   return (
-    <div className="auth-page">
-      <div className="auth-card">
+    <div className={`auth-page ${pageClassName}`.trim()}>
+      <div className={`auth-card ${cardClassName}`.trim()}>
         <Link to="/" className="auth-brand">
           ← Back to home
         </Link>

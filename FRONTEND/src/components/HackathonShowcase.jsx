@@ -52,9 +52,9 @@ const sellingPoints = [
 const HackathonShowcase = () => {
   return (
     <>
-      <section id="hack-problem" className="hack-sec" aria-labelledby="hack-problem-h">
+      <section id="about" className="hack-sec" aria-labelledby="about-h">
         <div className="sw">
-          <h2 id="hack-problem-h" className="hack-h2 rv" style={{ transitionDelay: '0.06s' }}>
+          <h2 id="about-h" className="hack-h2 rv" style={{ transitionDelay: '0.06s' }}>
             Investing fear — and how we confront it
           </h2>
           <div className="hack-prose hack-columns rv" style={{ transitionDelay: '0.1s' }}>
@@ -101,7 +101,7 @@ const HackathonShowcase = () => {
           </h2>
           <ul className="hack-approach-grid rv" style={{ transitionDelay: '0.1s' }}>
             <li className="hack-card">
-              <p className="hack-card-k">Personal AI portfolio</p>
+              <p className="hack-card-k">Decode Your Finance Self</p>
               <p className="hack-card-d">
                 Hesitation and response time become features: quicker patterns suggest higher-tempo strategies; slower,
                 more deliberate behavior maps to longer horizons. A <strong>fear score (1–100)</strong> summarizes
@@ -181,10 +181,10 @@ const HackathonShowcase = () => {
         </div>
       </section>
 
-      <section id="hack-selling" className="hack-sec" aria-labelledby="hack-selling-h">
+      <section id="why-us" className="hack-sec" aria-labelledby="why-us-h">
         <div className="sw">
-          <p className="hack-sl rv">Selling point</p>
-          <h2 id="hack-selling-h" className="hack-h2 rv" style={{ transitionDelay: '0.06s' }}>
+          <p className="hack-sl rv">Why us</p>
+          <h2 id="why-us-h" className="hack-h2 rv" style={{ transitionDelay: '0.06s' }}>
             Why judges — and users — should care
           </h2>
           <ul className="hack-sell-grid rv" style={{ transitionDelay: '0.1s' }}>
