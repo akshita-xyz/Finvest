@@ -4,15 +4,8 @@ import Intro from '../components/Intro'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import Marquee from '../components/Marquee'
-import WhatWeDo from '../components/WhatWeDo'
-import Stats from '../components/Stats'
-import Process from '../components/Process'
-import VisualPanel from '../components/VisualPanel'
-import GetStarted from '../components/GetStarted'
-import LearnMore from '../components/LearnMore'
-import CtaBand from '../components/CtaBand'
-import Footer from '../components/Footer'
-import Modals from '../components/Modals'
+import HackathonShowcase from '../components/HackathonShowcase'
+import TeamFooter from '../components/TeamFooter'
 
 const INTRO_ONCE_KEY = 'finvest_intro_tagline_seen_v1';
 const LANDING_SCROLL_KEY = 'finvest_landing_scroll_y_v1';
@@ -23,8 +16,6 @@ function LandingPage() {
     if (typeof window === 'undefined') return false;
     return window.sessionStorage.getItem(INTRO_ONCE_KEY) === '1';
   });
-  const [activeModal, setActiveModal] = useState(null);
-
   const handleIntroDone = useCallback(() => {
     try {
       window.sessionStorage.setItem(INTRO_ONCE_KEY, '1');
@@ -44,13 +35,6 @@ function LandingPage() {
           layers: [
             { id: "hero-layer-far", speed: 0.3 },
             { id: "hero-layer-mid", speed: 0.6 },
-          ],
-        },
-        {
-          container: "#mq",
-          layers: [
-            { id: "mq-marquee-far", speed: 0.25 },
-            { id: "mq-marquee-mid", speed: 0.55 },
           ],
         },
       ];
@@ -166,21 +150,9 @@ function LandingPage() {
         <Navbar />
         <Hero />
         <Marquee />
-        <WhatWeDo />
-        <Stats />
-        <Process />
-        <VisualPanel onOpenModal={setActiveModal} />
-        <GetStarted />
-        <LearnMore onOpenModal={setActiveModal} />
-        <CtaBand onOpenModal={setActiveModal} />
-        <Footer />
+        <HackathonShowcase />
+        <TeamFooter />
       </div>
-
-      <Modals 
-        activeModal={activeModal} 
-        onClose={() => setActiveModal(null)} 
-        onOpenModal={setActiveModal}
-      />
     </>
   )
 }

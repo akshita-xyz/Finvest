@@ -37,7 +37,7 @@
 }
 
 .auth-brand:hover {
-  color: var(--accent, #c8ff00);
+  color: var(--accent, #6db4ff);
 }
 
 .auth-title {
@@ -83,11 +83,11 @@
   font-size: 1rem;
   margin-bottom: 0.25rem;
   cursor: text;
-  caret-color: var(--accent, #c8ff00);
+  caret-color: var(--accent, #6db4ff);
 }
 
 .auth-input:focus {
-  outline: 2px solid var(--accent, #c8ff00);
+  outline: 2px solid var(--accent, #6db4ff);
   outline-offset: 1px;
 }
 
@@ -105,7 +105,7 @@
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
-  background: var(--accent, #c8ff00);
+  background: var(--accent, #6db4ff);
   color: var(--ink, #080808);
 }
 
@@ -133,8 +133,8 @@
 }
 
 .auth-banner--warn {
-  background: rgba(200, 255, 0, 0.08);
-  border: 1px solid rgba(200, 255, 0, 0.25);
+  background: rgba(109, 180, 255, 0.08);
+  border: 1px solid rgba(109, 180, 255, 0.25);
   color: #dfe89a;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .auth-muted a {
-  color: var(--accent, #c8ff00);
+  color: var(--accent, #6db4ff);
   text-decoration: none;
 }
 

@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, createElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Rocket, BookOpen, Mail } from 'lucide-react';
+import { Home, AlertCircle, Compass, ListOrdered, Medal, Rocket } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import '../styles/account.css';
 
 const NAV_ITEMS = [
-  { id: 'what', href: '#what', label: 'What we do', Icon: Sparkles },
-  { id: 'gs-section', href: '#gs-section', label: 'Get started', Icon: Rocket },
-  { id: 'lm-section', href: '#lm-section', label: 'Learn more', Icon: BookOpen },
-  { id: 'ctaband', href: '#ctaband', label: 'Contact', Icon: Mail },
+  { id: 'hero', href: '#hero', label: 'Home', Icon: Home },
+  { id: 'hack-problem', href: '#hack-problem', label: 'Problem', Icon: AlertCircle },
+  { id: 'hack-approach', href: '#hack-approach', label: 'Approach', Icon: Compass },
+  { id: 'hack-workflow', href: '#hack-workflow', label: 'Workflow', Icon: ListOrdered },
+  { id: 'hack-selling', href: '#hack-selling', label: 'Pitch', Icon: Medal },
+  { id: 'hack-project', href: '#hack-project', label: 'Project', Icon: Rocket },
 ];
 
 const NAV_IDS = NAV_ITEMS.map((item) => item.id);

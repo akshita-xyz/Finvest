@@ -20,7 +20,7 @@ const VisualPanel = ({ onOpenModal }) => {
 
     const mk = () => {
       pts = [];
-      const cols = ["#c8ff00", "#ff4d1c", "#ffffff", "#ffffff"];
+      const cols = ["#6db4ff", "#ff4d1c", "#ffffff", "#ffffff"];
       for (let i = 0; i < 40; i++)
         pts.push({
           x: Math.random() * W,
