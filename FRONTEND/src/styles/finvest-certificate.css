@@ -1,0 +1,313 @@
+/* Formal achievement certificate — Finvest */
+
+.finvest-cert {
+  --cert-gold: #b8860b;
+  --cert-gold-light: #d4a84b;
+  --cert-ink: #1a2744;
+  --cert-ink-soft: #3d4f6f;
+  --cert-paper: linear-gradient(165deg, #fffef8 0%, #f5f0e6 45%, #ebe4d8 100%);
+  position: relative;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--cert-ink);
+  background: var(--cert-paper);
+  border: 3px double var(--cert-gold);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(184, 134, 11, 0.35),
+    0 12px 40px rgba(26, 39, 68, 0.18);
+  padding: 1.75rem 1.5rem 1.5rem;
+  overflow: hidden;
+}
+
+.finvest-cert--compact {
+  padding: 1.1rem 1rem 1rem;
+  box-shadow: 0 4px 18px rgba(26, 39, 68, 0.12);
+}
+
+.finvest-cert::before,
+.finvest-cert::after {
+  content: '';
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--cert-gold-light);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.finvest-cert::before {
+  top: 10px;
+  left: 10px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.finvest-cert::after {
+  bottom: 10px;
+  right: 10px;
+  border-left: none;
+  border-top: none;
+}
+
+.finvest-cert-ribbon {
+  position: absolute;
+  top: 0;
+  right: 1.25rem;
+  width: 36px;
+  height: 52px;
+  background: linear-gradient(180deg, #c9a227 0%, #8b6914 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.finvest-cert-ribbon span {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg);
+  font-size: 0.45rem;
+  letter-spacing: 0.2em;
+  font-family: system-ui, sans-serif;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+}
+
+.finvest-cert-seal {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0e6d4, #c9a227 55%, #7a5c12);
+  border: 3px solid var(--cert-gold-light);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.finvest-cert--compact .finvest-cert-seal {
+  width: 44px;
+  height: 44px;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.finvest-cert-eyebrow {
+  text-align: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--cert-gold);
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+.finvest-cert-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  line-height: 1.25;
+  color: var(--cert-ink);
+}
+
+.finvest-cert--compact .finvest-cert-title {
+  font-size: 0.88rem;
+}
+
+.finvest-cert-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cert-gold-light), transparent);
+  margin: 0.65rem 0;
+  opacity: 0.7;
+}
+
+.finvest-cert-presented {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--cert-ink-soft);
+  font-family: system-ui, sans-serif;
+  margin: 0 0 0.2rem;
+}
+
+.finvest-cert-name {
+  text-align: center;
+  font-size: 1.25rem;
+  font-style: italic;
+  margin: 0 0 0.5rem;
+  color: var(--cert-ink);
+}
+
+.finvest-cert--compact .finvest-cert-name {
+  font-size: 1rem;
+}
+
+.finvest-cert-award {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  color: #0f2847;
+}
+
+.finvest-cert--compact .finvest-cert-award {
+  font-size: 0.82rem;
+}
+
+.finvest-cert-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--cert-ink-soft);
+  line-height: 1.5;
+}
+
+.finvest-cert-lines li {
+  text-align: center;
+}
+
+.finvest-cert-footer {
+  margin-top: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.62rem;
+  color: var(--cert-ink-soft);
+}
+
+.finvest-cert-sig {
+  flex: 1;
+  border-top: 1px solid rgba(184, 134, 11, 0.45);
+  padding-top: 0.35rem;
+  text-align: center;
+}
+
+.finvest-cert-fine {
+  margin: 0.5rem 0 0;
+  font-size: 0.58rem;
+  color: rgba(61, 79, 111, 0.75);
+  text-align: center;
+  font-family: system-ui, sans-serif;
+  line-height: 1.35;
+}
+
+/* Modal shell */
+.finvest-cert-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 18, 32, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: finvest-cert-fade 0.2s ease-out;
+}
+
+@keyframes finvest-cert-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.finvest-cert-modal-panel {
+  position: relative;
+  width: min(420px, 100%);
+  max-height: min(92vh, 720px);
+  overflow: auto;
+  padding-top: 0.35rem;
+}
+
+.finvest-cert-modal-titlebar {
+  margin: 0 2.5rem 0.75rem 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.finvest-cert-modal-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  border: none;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finvest-cert-modal-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.finvest-cert-modal-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.finvest-cert-modal-btn {
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #3d8ae8, #2563c9);
+  color: #fff;
+}
+
+.finvest-cert-modal-btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e8eef8;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.finvest-cert-modal-btn:hover {
+  filter: brightness(1.06);
+}
+
+@media print {
+  .finvest-cert-modal-overlay {
+    background: #fff;
+    position: static;
+    padding: 0;
+  }
+
+  .finvest-cert-modal-close,
+  .finvest-cert-modal-actions {
+    display: none !important;
+  }
+
+  .finvest-cert-modal-panel {
+    max-height: none;
+  }
+}

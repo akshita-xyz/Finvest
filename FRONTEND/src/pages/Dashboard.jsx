@@ -1,38 +1,24 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
-  classificationFromFearScore,
-  fetchUserProfile,
-  mergeDashboardPrefs,
-  updateUserProfileFields,
-} from '../services/userProfileService';
+  classificationFromFearScore, fetchUserProfile, mergeDashboardPrefs, updateUserProfileFields, } from '../services/userProfileService';
 import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolioRoadmap';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Activity,
-  Shield,
-  TrendingUp,
-  MessageSquare,
-  Menu,
-  X,
-  Target,
-  Zap,
-  Sparkles,
-  Newspaper,
-  ExternalLink,
-  Search,
-  ClipboardList,
-  Lock,
-  Brain,
-  ChevronRight,
-  RotateCcw,
-} from 'lucide-react';
+  Activity, Shield, TrendingUp, MessageSquare, Menu, X, Target, Zap, Sparkles, Newspaper, ExternalLink, Search, ClipboardList, Lock, Brain, ChevronRight, RotateCcw, } from 'lucide-react';
 import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
 import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
+import {
+  fetchQuoteFinnhubStyle,
+  fetchDashboardNews,
+  getAlphaVantageKey,
+  searchSymbols,
+} from '../lib/marketDataHub';
 import RiskCandlestickChart from '../components/RiskCandlestickChart';
 import { EMOTION_QUESTIONS, evaluateEmotionMindset } from '../lib/emotionInvestingMindset';
+import { CertificateModal, FinvestCertificate } from '../components/FinvestCertificate';
 
 const MotionDiv = motion.div;
 
@@ -50,7 +36,10 @@ function readNavSectionFromHash() {
   return 'risk-sandbox';
 }
 
-const CHAT_BACKEND = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
+/** In dev, Vite proxies `/chat` and `/api` to BACKEND (see vite.config.js) so the AI works without VITE_BACKEND_URL. */
+const CHAT_BACKEND = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 function displayNameForAi(user) {
   if (!user) return '';
@@ -87,6 +76,8 @@ function Dashboard() {
   const FINNHUB_API_KEY = String(
     import.meta.env.VITE_FINNHUB_API_KEY || import.meta.env.FINNHUB_API_KEY || ''
   ).trim();
+  const ALPHA_VANTAGE_KEY = getAlphaVantageKey();
+  const HAS_MARKET_CREDENTIALS = Boolean(FINNHUB_API_KEY || ALPHA_VANTAGE_KEY);
   const TRACKED_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL'];
 
   const [fearScore, setFearScore] = useState(50);
@@ -126,7 +117,9 @@ function Dashboard() {
   const [emotionAnswers, setEmotionAnswers] = useState({});
   const [emotionResult, setEmotionResult] = useState(null);
   const [lastEmotionSnapshot, setLastEmotionSnapshot] = useState(null);
-  /** Timed personality / “fear” quiz in Personalized Portfolio — unlocks Behavior & Portfolio Overview. */
+  const [emotionCertModalOpen, setEmotionCertModalOpen] = useState(false);
+  const [emotionCertIssuedAt, setEmotionCertIssuedAt] = useState('');
+  /** Timed personality / “fear” quiz in Personalized Portfolio , unlocks Behavior & Portfolio Overview. */
   const [fearQuizComplete, setFearQuizComplete] = useState(true);
 
   /** Guests always see charts; signed-in users only after profile load confirms quiz completion (avoids unlock flash). */
@@ -198,8 +191,13 @@ function Dashboard() {
         return;
       }
       setFearQuizComplete(Boolean(data?.dashboard_prefs?.assessment?.completedAt));
+      const quizFear = data?.dashboard_prefs?.assessment?.traits?.fearScore;
       if (data?.fear_score != null && Number.isFinite(Number(data.fear_score))) {
         const n = Math.min(100, Math.max(0, Number(data.fear_score)));
+        setFearScore(n);
+        localStorage.setItem('fearScore', String(n));
+      } else if (Number.isFinite(Number(quizFear))) {
+        const n = Math.min(100, Math.max(0, Math.round(Number(quizFear))));
         setFearScore(n);
         localStorage.setItem('fearScore', String(n));
       } else {
@@ -239,9 +237,7 @@ function Dashboard() {
     if (!profileReady || !user?.id || skipProfileSaveRef.current) return;
     const handle = setTimeout(() => {
       updateUserProfileFields(user.id, {
-        fear_score: fearScore,
-        classification: classificationFromFearScore(fearScore),
-      }).then(({ error }) => {
+        fear_score: fearScore, classification: classificationFromFearScore(fearScore), }).then(({ error }) => {
         if (error) {
           setProfileSyncNote(error.message || 'Could not save profile to Supabase.');
         } else {
@@ -258,12 +254,8 @@ function Dashboard() {
       setRiskLoading(true);
       setRiskError('');
       try {
-        const quoteResponse = await fetch(
-          `https://finnhub.io/api/v1/quote?symbol=${selectedStock}&token=${FINNHUB_API_KEY}`
-        );
-        if (!quoteResponse.ok) throw new Error('QUOTE_FETCH_FAILED');
-        const quote = await quoteResponse.json();
-        if (!Number.isFinite(quote.c) || quote.c <= 0) throw new Error('INVALID_QUOTE');
+        const quote = await fetchQuoteFinnhubStyle(selectedStock, FINNHUB_API_KEY, ALPHA_VANTAGE_KEY);
+        if (!quote || !Number.isFinite(quote.c) || quote.c <= 0) throw new Error('INVALID_QUOTE');
 
         const initialInvestment = 10000;
         const livePercentChange = Number.isFinite(quote.dp) ? quote.dp : 0;
@@ -361,26 +353,7 @@ function Dashboard() {
         }
 
         setRiskResult({
-          symbol: selectedStock,
-          initialInvestment,
-          currentValue,
-          profitLoss,
-          profitLossPercent,
-          worstValue,
-          worstLoss: Math.max(0, initialInvestment - worstValue),
-          maxDrawdownPercent,
-          livePercentChange,
-          liveAbsoluteChange,
-          liveRupeeImpact,
-          yearlyHighPrice,
-          yearlyLowPrice,
-          yearlyHighValue,
-          yearlyLowValue,
-          stopLossPrice,
-          stopLossPositionValue,
-          riskRewardRatio,
-          riskRewardNote,
-        });
+          symbol: selectedStock, initialInvestment, currentValue, profitLoss, profitLossPercent, worstValue, worstLoss: Math.max(0, initialInvestment - worstValue), maxDrawdownPercent, livePercentChange, liveAbsoluteChange, liveRupeeImpact, yearlyHighPrice, yearlyLowPrice, yearlyHighValue, yearlyLowValue, stopLossPrice, stopLossPositionValue, riskRewardRatio, riskRewardNote, });
       } catch {
         const fallbackQuote = liveStocks.find((item) => item.symbol === selectedStock);
         if (fallbackQuote && Number.isFinite(fallbackQuote.price) && fallbackQuote.price > 0) {
@@ -390,26 +363,7 @@ function Dashboard() {
           const currentValue = initialInvestment + liveRupeeImpact;
           const estWorstValue = initialInvestment + (initialInvestment * Math.min(livePercentChange, -Math.abs(livePercentChange))) / 100;
           setRiskResult({
-            symbol: selectedStock,
-            initialInvestment,
-            currentValue,
-            profitLoss: liveRupeeImpact,
-            profitLossPercent: livePercentChange,
-            worstValue: estWorstValue,
-            worstLoss: Math.max(0, initialInvestment - estWorstValue),
-            maxDrawdownPercent: ((initialInvestment - estWorstValue) / initialInvestment) * 100,
-            livePercentChange,
-            liveAbsoluteChange: fallbackQuote.change || 0,
-            liveRupeeImpact,
-            yearlyHighPrice: null,
-            yearlyLowPrice: null,
-            yearlyHighValue: null,
-            yearlyLowValue: null,
-            stopLossPrice: null,
-            stopLossPositionValue: null,
-            riskRewardRatio: null,
-            riskRewardNote: '',
-          });
+            symbol: selectedStock, initialInvestment, currentValue, profitLoss: liveRupeeImpact, profitLossPercent: livePercentChange, worstValue: estWorstValue, worstLoss: Math.max(0, initialInvestment - estWorstValue), maxDrawdownPercent: ((initialInvestment - estWorstValue) / initialInvestment) * 100, livePercentChange, liveAbsoluteChange: fallbackQuote.change || 0, liveRupeeImpact, yearlyHighPrice: null, yearlyLowPrice: null, yearlyHighValue: null, yearlyLowValue: null, stopLossPrice: null, stopLossPositionValue: null, riskRewardRatio: null, riskRewardNote: '', });
           setRiskError('');
         } else {
           setRiskResult(null);
@@ -432,16 +386,7 @@ function Dashboard() {
 
     const timeout = setTimeout(async () => {
       try {
-        const response = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${FINNHUB_API_KEY}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        const results = Array.isArray(data.result) ? data.result
-          .filter((item) => item.symbol && item.description)
-          .slice(0, 8)
-          .map((item) => ({
-            symbol: item.symbol,
-            description: item.description,
-          })) : [];
+        const results = await searchSymbols(query, FINNHUB_API_KEY, ALPHA_VANTAGE_KEY);
         setStockSuggestions(results);
       } catch {
         setStockSuggestions([]);
@@ -460,11 +405,18 @@ function Dashboard() {
     const fetchStocks = async () => {
       setMarketLoading(true);
       setMarketError('');
+      if (!HAS_MARKET_CREDENTIALS) {
+        setMarketError(
+          'Add VITE_FINNHUB_API_KEY or VITE_ALPHA_VANTAGE_API_KEY in FRONTEND/.env (see .env.example).'
+        );
+        setLiveStocks([]);
+        setMarketLoading(false);
+        return;
+      }
       try {
         const requests = TRACKED_SYMBOLS.map(async (symbol) => {
-          const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`);
-          if (!response.ok) throw new Error(`Stock fetch failed for ${symbol}`);
-          const quote = await response.json();
+          const quote = await fetchQuoteFinnhubStyle(symbol, FINNHUB_API_KEY, ALPHA_VANTAGE_KEY);
+          if (!quote || !Number.isFinite(quote.c)) return null;
           return {
             symbol,
             price: quote.c,
@@ -475,7 +427,7 @@ function Dashboard() {
           };
         });
         const stockData = await Promise.all(requests);
-        setLiveStocks(stockData.filter((item) => Number.isFinite(item.price) && item.price > 0));
+        setLiveStocks(stockData.filter((item) => item && Number.isFinite(item.price) && item.price > 0));
       } catch {
         setMarketError('Unable to load live stocks right now.');
       } finally {
@@ -486,37 +438,28 @@ function Dashboard() {
     fetchStocks();
     const marketInterval = setInterval(fetchStocks, 30000);
     return () => clearInterval(marketInterval);
-  }, []);
+  }, [HAS_MARKET_CREDENTIALS, FINNHUB_API_KEY, ALPHA_VANTAGE_KEY]);
 
   useEffect(() => {
     const fetchNews = async () => {
       setNewsLoading(true);
       setNewsError('');
+      if (!HAS_MARKET_CREDENTIALS) {
+        setNewsError(
+          'Add VITE_FINNHUB_API_KEY or VITE_ALPHA_VANTAGE_API_KEY in FRONTEND/.env (see .env.example).'
+        );
+        setLiveNews([]);
+        setNewsLoading(false);
+        return;
+      }
       try {
-        const sym = newsCompanySymbol.trim().toUpperCase();
-        let url;
-        if (sym) {
-          const to = new Date();
-          const from = new Date();
-          from.setDate(from.getDate() - 7);
-          const fmt = (d) => d.toISOString().slice(0, 10);
-          url = `https://finnhub.io/api/v1/company-news?symbol=${encodeURIComponent(sym)}&from=${fmt(from)}&to=${fmt(to)}&token=${FINNHUB_API_KEY}`;
-        } else {
-          url = `https://finnhub.io/api/v1/news?category=${encodeURIComponent(newsCategory)}&token=${FINNHUB_API_KEY}`;
-        }
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('News fetch failed');
-        const articles = await response.json();
-        const normalized = Array.isArray(articles)
-          ? articles.slice(0, 60).map((item) => ({
-              id: item.id || `${item.datetime}-${item.headline}`,
-              headline: item.headline,
-              summary: item.summary,
-              source: item.source,
-              url: item.url,
-              datetime: item.datetime,
-            }))
-          : [];
+        const normalized = await fetchDashboardNews({
+          newsCategory,
+          newsCompanySymbol,
+          finnhubKey: FINNHUB_API_KEY,
+          alphaKey: ALPHA_VANTAGE_KEY,
+        });
+        if (!normalized.length) throw new Error('EMPTY_NEWS');
         setLiveNews(normalized);
         setNewsLastUpdated(Date.now());
       } catch {
@@ -529,7 +472,7 @@ function Dashboard() {
     fetchNews();
     const newsInterval = setInterval(fetchNews, 45000);
     return () => clearInterval(newsInterval);
-  }, [newsCategory, newsCompanySymbol]);
+  }, [newsCategory, newsCompanySymbol, HAS_MARKET_CREDENTIALS, FINNHUB_API_KEY, ALPHA_VANTAGE_KEY]);
 
   const filteredNews = useMemo(() => {
     let list = liveNews;
@@ -543,11 +486,7 @@ function Dashboard() {
     }
     if (newsRegion === 'all') return list;
     const regionKeywords = {
-      us: ['u.s.', ' u.s', 'america', 'fed ', 'federal reserve', 'wall street', 'nasdaq', 'nyse', 's&p', 'washington', 'treasury', 'biden', 'trump'],
-      eu: ['europe', 'ecb', 'euro', 'brexit', 'germany', 'france', ' u.k', 'uk ', 'e.u.', 'brussels'],
-      asia: ['asia', 'china', 'japan', 'hong kong', 'singapore', 'korea', 'taiwan', 'beijing', 'tokyo'],
-      india: ['india', 'rbi', 'sensex', 'nifty', 'mumbai', 'delhi', 'rupee', 'modi'],
-    };
+      us: ['u.s.', ' u.s', 'america', 'fed ', 'federal reserve', 'wall street', 'nasdaq', 'nyse', 's&p', 'washington', 'treasury', 'biden', 'trump'], eu: ['europe', 'ecb', 'euro', 'brexit', 'germany', 'france', ' u.k', 'uk ', 'e.u.', 'brussels'], asia: ['asia', 'china', 'japan', 'hong kong', 'singapore', 'korea', 'taiwan', 'beijing', 'tokyo'], india: ['india', 'rbi', 'sensex', 'nifty', 'mumbai', 'delhi', 'rupee', 'modi'], };
     const keys = regionKeywords[newsRegion] || [];
     list = list.filter((a) => {
       const text = `${a.headline} ${a.summary}`.toLowerCase();
@@ -557,8 +496,7 @@ function Dashboard() {
   }, [liveNews, newsHeadlineFilter, newsRegion]);
 
   const newsPreview = useMemo(
-    () => filteredNews.slice(0, NEWS_PREVIEW_COUNT),
-    [filteredNews]
+    () => filteredNews.slice(0, NEWS_PREVIEW_COUNT), [filteredNews]
   );
   const newsHasMore = filteredNews.length > NEWS_PREVIEW_COUNT;
 
@@ -582,9 +520,7 @@ function Dashboard() {
     if (!trimmed || chatSending) return;
 
     const historyForApi = chatMessages.map((m) => ({
-      role: m.role === 'ai' ? 'model' : 'user',
-      text: m.text,
-    }));
+      role: m.role === 'ai' ? 'model' : 'user', text: m.text, }));
 
     setChatMessages((prev) => [...prev, { role: 'user', text: trimmed }]);
     setInputText('');
@@ -602,6 +538,14 @@ function Dashboard() {
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const reply =
+          typeof data?.reply === 'string'
+            ? data.reply
+            : `Chat server returned HTTP ${res.status}. For local dev: run \`npm start\` in BACKEND and \`ollama serve\` (set OLLAMA_MODEL in BACKEND/.env).`;
+        setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
+        return;
+      }
       const reply = typeof data?.reply === 'string' ? data.reply : 'No response from the AI service.';
       setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
     } catch {
@@ -609,7 +553,8 @@ function Dashboard() {
         ...prev,
         {
           role: 'ai',
-          text: 'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND), run Ollama (`ollama serve` + `ollama pull` your model), set OLLAMA_MODEL and optional ALPHA_VANTAGE_KEY in BACKEND/.env, or check VITE_BACKEND_URL.',
+          text:
+            'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND). For chat without Ollama, set GEMINI_API_KEY in BACKEND/.env (Google AI Studio). Otherwise run Ollama or Docker (BACKEND/docker-compose.ollama.yml). In dev, Vite proxies `/chat` to port 3001.',
         },
       ]);
     } finally {
@@ -626,24 +571,16 @@ function Dashboard() {
 
   const getAllocation = () => {
     if (fearScore < 30) return [
-      { name: 'Stocks', value: 70, color: '#22c55e' },
-      { name: 'Bonds', value: 20, color: '#3b82f6' },
-      { name: 'Cash', value: 10, color: '#6b7280' }
+      { name: 'Stocks', value: 70, color: '#22c55e' }, { name: 'Bonds', value: 20, color: '#3b82f6' }, { name: 'Cash', value: 10, color: '#6b7280' }
     ];
     if (fearScore < 50) return [
-      { name: 'Stocks', value: 55, color: '#84cc16' },
-      { name: 'Bonds', value: 30, color: '#3b82f6' },
-      { name: 'Cash', value: 15, color: '#6b7280' }
+      { name: 'Stocks', value: 55, color: '#84cc16' }, { name: 'Bonds', value: 30, color: '#3b82f6' }, { name: 'Cash', value: 15, color: '#6b7280' }
     ];
     if (fearScore < 70) return [
-      { name: 'Stocks', value: 40, color: '#eab308' },
-      { name: 'Bonds', value: 45, color: '#3b82f6' },
-      { name: 'Cash', value: 15, color: '#6b7280' }
+      { name: 'Stocks', value: 40, color: '#eab308' }, { name: 'Bonds', value: 45, color: '#3b82f6' }, { name: 'Cash', value: 15, color: '#6b7280' }
     ];
     return [
-      { name: 'Stocks', value: 25, color: '#f97316' },
-      { name: 'Bonds', value: 55, color: '#3b82f6' },
-      { name: 'Cash', value: 20, color: '#6b7280' }
+      { name: 'Stocks', value: 25, color: '#f97316' }, { name: 'Bonds', value: 55, color: '#3b82f6' }, { name: 'Cash', value: 20, color: '#6b7280' }
     ];
   };
 
@@ -676,12 +613,7 @@ function Dashboard() {
     const ms = typeof datetime === 'number' ? datetime * 1000 : Date.parse(String(datetime));
     if (!Number.isFinite(ms)) return '';
     return new Date(ms).toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', });
   };
 
   const articleDateIso = (datetime) => {
@@ -720,25 +652,25 @@ function Dashboard() {
       setEmotionPhase('results');
       try {
         const snap = {
-          at: Date.now(),
-          overallReadiness: evaluated.overallReadiness,
-          archetype: evaluated.archetype,
-          improveCount: evaluated.improveAreas.length,
-        };
+          at: Date.now(), overallReadiness: evaluated.overallReadiness, archetype: evaluated.archetype, improveCount: evaluated.improveAreas.length, };
         localStorage.setItem(EMOTION_STORAGE_KEY, JSON.stringify(snap));
         setLastEmotionSnapshot(snap);
       } catch {
         /* ignore */
       }
+      const issued = new Date().toISOString();
+      setEmotionCertIssuedAt(issued);
       if (user?.id) {
         mergeDashboardPrefs(user.id, {
           nft_badges: {
             emotionCertificate: true,
-            emotionCertificateAt: new Date().toISOString(),
+            emotionCertificateAt: issued,
             emotionArchetype: evaluated.archetype,
+            emotionReadiness: evaluated.overallReadiness,
           },
         }).catch(() => {});
       }
+      setEmotionCertModalOpen(true);
     } else {
       setEmotionQIndex((i) => i + 1);
     }
@@ -758,6 +690,8 @@ function Dashboard() {
     setEmotionQIndex(0);
     setEmotionAnswers({});
     setEmotionResult(null);
+    setEmotionCertModalOpen(false);
+    setEmotionCertIssuedAt('');
   };
 
   return (
@@ -766,7 +700,7 @@ function Dashboard() {
         <div className="db-sidebar__header">
           <div>
             <div className="db-brand">FINVEST</div>
-            <div className="db-brand-sub">Fear-aware investing cockpit</div>
+            <div className="db-brand-sub">Feel the risk, master the outcome</div>
           </div>
           <button className="db-icon-btn db-mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={20} />
@@ -801,7 +735,7 @@ function Dashboard() {
             <TrendingUp size={18} aria-hidden />
             <span className="db-nav-item__text">
               <span className="db-nav-item__title">Live Markets</span>
-              <span className="db-nav-item__sub">Quotes &amp; movers</span>
+              <span className="db-nav-item__sub">Charts, Profits and Losses</span>
             </span>
           </a>
           <a
@@ -855,7 +789,7 @@ function Dashboard() {
             <Shield size={18} aria-hidden />
             <span className="db-nav-item__text">
               <span className="db-nav-item__title">Decode Your Finance Self</span>
-              <span className="db-nav-item__sub">Quiz &amp; personalized mix</span>
+              <span className="db-nav-item__sub">Timing, traits, and suggested blend</span>
             </span>
           </Link>
         </nav>
@@ -886,19 +820,44 @@ function Dashboard() {
             <p className="db-eyebrow">Dashboard</p>
             <h2 className="db-page-title">Risk Sandbox</h2>
             <p className="db-page-subtitle">
-              Beautiful, high-clarity visuals for fear score, portfolio mix, and scenario-based confidence.
+              Treat this area as a rehearsal desk: tune how cautious you feel, preview a sample mix, and stress whatif
+              moves with live charts and headlines so comfort and tradeoffs are clear before real money is on the line.
               {user?.id ? (
                 <span className="db-profile-welcome">
                   {' '}
                   Signed in as{' '}
                   <strong>{user.user_metadata?.full_name || user.email}</strong>
                   {profileSyncNote ? (
-                    <span className="db-profile-sync db-profile-sync--warn"> — {profileSyncNote}</span>
+                    <span className="db-profile-sync db-profile-sync--warn"> Note: {profileSyncNote}</span>
+                  ) : !profileReady ? (
+                    <span className="db-profile-sync"> Loading your profile…</span>
+                  ) : !fearQuizComplete ? (
+                    <span className="db-profile-sync">
+                      {' '}
+                      <Link to="/personalized-portfolio?tab=quiz" className="db-profile-sync-link">
+                        Take the Decode Your Finance Self quiz
+                      </Link>{' '}
+                      to get your fear score calculated.
+                    </span>
                   ) : (
-                    <span className="db-profile-sync"> — your fear score is saved to Supabase for this account.</span>
+                    <span className="db-profile-sync">
+                      {' '}
+                      Your fear score: <strong>{fearScore}</strong>/100.
+                    </span>
                   )}
                 </span>
-              ) : null}
+              ) : (
+                <span className="db-profile-welcome">
+                  <span className="db-profile-sync">
+                    {' '}
+                    Preview fear score: <strong>{fearScore}</strong>/100.{' '}
+                    <Link to="/personalized-portfolio?tab=quiz" className="db-profile-sync-link">
+                      Take the Decode Your Finance Self quiz
+                    </Link>{' '}
+                    to get your fear score calculated.
+                  </span>
+                </span>
+              )}
             </p>
           </div>
           <button className="db-ai-btn" onClick={() => setChatOpen(!chatOpen)}>
@@ -933,7 +892,7 @@ function Dashboard() {
                 </div>
                 <h4 className="db-behavior-lock-title">Take the quiz to unlock</h4>
                 <p className="db-behavior-lock-copy">
-                  We use your answers and response timing to shape your investor cluster and allocation preview — then
+                  We use your answers and response timing to shape your investor cluster and allocation preview , then
                   this section opens here on the dashboard.
                 </p>
                 <Link
@@ -941,7 +900,7 @@ function Dashboard() {
                   className="db-behavior-unlock-btn"
                   onClick={() => setSidebarOpen(false)}
                 >
-                  Open Decode Your Finance Self — personality quiz
+                  Open Decode Your Finance Self , personality quiz
                 </Link>
               </div>
             ) : null}
@@ -962,7 +921,7 @@ function Dashboard() {
               <div className="db-progress-fill" style={{ width: `${fearScore}%`, backgroundColor: investorInfo.color }}></div>
             </div>
             <label className="db-fear-slider-label" htmlFor="fear-score-slider">
-              Adjust fear score (stored per user in Supabase)
+              Adjust fear score. 
             </label>
             <input
               id="fear-score-slider"
@@ -1027,12 +986,15 @@ function Dashboard() {
         <section className="db-group" id="live-markets-news">
           <div className="db-section-heading">
             <h3>Live Markets & News Tracking</h3>
+            <p className="db-section-lead">
+              We brought it all here just FOR YOU!  
+            </p>
           </div>
           <section className="db-live-section">
           <article className="db-card" id="live-stocks">
             <div className="db-card-header">
               <h3><TrendingUp size={20} /> Live Stocks Tracker</h3>
-              <span className="db-card-subtitle">Auto-refresh every 30 seconds</span>
+              <span className="db-card-subtitle">Snapshots refresh every 30 seconds</span>
             </div>
             {marketLoading && <p className="db-live-empty">Loading live stock prices...</p>}
             {!marketLoading && marketError && <p className="db-live-empty">{marketError}</p>}
@@ -1062,7 +1024,7 @@ function Dashboard() {
             <div className="db-card-header">
               <h3><Newspaper size={20} /> Live Financial News</h3>
               <span className="db-card-subtitle">
-                Finnhub API · auto-refresh 45s
+                auto-refresh 45s
                 {newsLastUpdated ? ` · updated ${formatNewsUpdated(newsLastUpdated)}` : ''}
               </span>
             </div>
@@ -1086,7 +1048,7 @@ function Dashboard() {
                 <input
                   id="newsCompany"
                   type="text"
-                  placeholder="e.g. AAPL — overrides category"
+                  placeholder="e.g. AAPL , overrides category"
                   value={newsCompanySymbol}
                   onChange={(e) => setNewsCompanySymbol(e.target.value.toUpperCase())}
                 />
@@ -1154,14 +1116,13 @@ function Dashboard() {
         </section>
 
         <section className="db-group" id="ai-risk-simulator">
-          <div className="db-section-heading"><h3>AI Risk Simulator (Core)</h3></div>
+          <div className="db-section-heading"><h3>AI Risk Simulator</h3></div>
           <article className="db-card">
             <div className="db-card-header">
               <div>
                 <h3><Activity size={20} /> Real Data Simulation</h3>
                 <p className="db-card-subtitle">
-                  TradingView-style candlestick chart with timeframe buttons; Finnhub live quote and 52-week metrics; ₹10,000
-                  risk cards below. Use <code>npm run dev</code> or <code>VITE_BACKEND_URL</code> for Yahoo chart data.
+                  This data is generated solely on the basis of historical data and not on any "stategy". This is a collection of how things were, we don't pose to know how things will be.
                 </p>
               </div>
             </div>
@@ -1269,7 +1230,7 @@ function Dashboard() {
                     <div className="db-risk-card">
                       <span>Suggested stop (calc.)</span>
                       <strong className="down">
-                        {formatMoney(riskResult.stopLossPrice)} → {formatINR(riskResult.stopLossPositionValue)} if hit
+                        {formatMoney(riskResult.stopLossPrice)} to {formatINR(riskResult.stopLossPositionValue)} if hit
                       </strong>
                     </div>
                   )}
@@ -1303,7 +1264,7 @@ function Dashboard() {
                 </h3>
                 <p className="db-card-subtitle">
                   Like a short personality-style reflection: emotional balance, impulses, and whether your headspace fits
-                  taking financial risk. Not medical or clinical advice — a gentle mirror before you commit capital.
+                  taking financial risk. Not medical or clinical advice , a gentle mirror before you commit capital.
                 </p>
               </div>
             </div>
@@ -1315,7 +1276,7 @@ function Dashboard() {
                   handle well, where to grow, and what to watch so you only scale risk in the right mindset.
                 </p>
                 <ul className="db-emotion-bullets">
-                  <li>12 scenario questions — about two minutes</li>
+                  <li>12 scenario questions , about two minutes</li>
                   <li>Six areas: regulation, FOMO, setbacks, patience, honesty, life balance</li>
                   <li>Results: strengths, growth edges, and a practical “look after” list</li>
                 </ul>
@@ -1372,6 +1333,22 @@ function Dashboard() {
 
             {emotionPhase === 'results' && emotionResult && (
               <div className="db-emotion-results">
+                <div className="db-emotion-cert-row">
+                  <FinvestCertificate
+                    variant="emotion"
+                    recipientName={displayNameForAi(user) || 'Finvest learner'}
+                    awardTitle={emotionResult.archetype}
+                    detailLines={[`Readiness index: ${emotionResult.overallReadiness}/100 across six mindset pillars.`]}
+                    issuedAtIso={emotionCertIssuedAt || new Date().toISOString()}
+                    finePrint="Stored on your profile when signed in. Optional on-chain badge if you connect a wallet and the Finvest contract is deployed."
+                    compact
+                    className="db-emotion-cert-preview"
+                  />
+                  <button type="button" className="db-emotion-cert-expand" onClick={() => setEmotionCertModalOpen(true)}>
+                    View full certificate
+                  </button>
+                </div>
+
                 <div className="db-emotion-archetype">
                   <span className="db-emotion-archetype-label">Your mindset profile</span>
                   <h4 className="db-emotion-archetype-title">{emotionResult.archetype}</h4>
@@ -1413,7 +1390,7 @@ function Dashboard() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="db-emotion-col-empty">No single area maxed yet — that is okay; small habits add up.</p>
+                      <p className="db-emotion-col-empty">No single area maxed yet , that is okay; small habits add up.</p>
                     )}
                   </div>
                   <div className="db-emotion-col db-emotion-col--grow">
@@ -1425,7 +1402,7 @@ function Dashboard() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="db-emotion-col-empty">Nothing flagged as urgent — still revisit when life gets noisy.</p>
+                      <p className="db-emotion-col-empty">Nothing flagged as urgent , still revisit when life gets noisy.</p>
                     )}
                   </div>
                   <div className="db-emotion-col db-emotion-col--watch">
@@ -1437,7 +1414,7 @@ function Dashboard() {
                         ))}
                       </ul>
                     ) : (
-                      <p className="db-emotion-col-empty">Middle band — stay curious, not complacent.</p>
+                      <p className="db-emotion-col-empty">Middle band , stay curious, not complacent.</p>
                     )}
                   </div>
                 </div>
@@ -1567,6 +1544,33 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      <CertificateModal
+        open={emotionCertModalOpen && Boolean(emotionResult)}
+        onClose={() => setEmotionCertModalOpen(false)}
+        title="Investing mindset certificate"
+        actions={
+          <>
+            <button type="button" className="finvest-cert-modal-btn" onClick={() => setEmotionCertModalOpen(false)}>
+              Close
+            </button>
+            <button type="button" className="finvest-cert-modal-btn finvest-cert-modal-btn--ghost" onClick={() => window.print()}>
+              Print / save as PDF
+            </button>
+          </>
+        }
+      >
+        {emotionResult ? (
+          <FinvestCertificate
+            variant="emotion"
+            recipientName={displayNameForAi(user) || 'Finvest learner'}
+            awardTitle={emotionResult.archetype}
+            detailLines={[`Readiness index: ${emotionResult.overallReadiness}/100 across six mindset pillars.`]}
+            issuedAtIso={emotionCertIssuedAt || new Date().toISOString()}
+            finePrint="Saved to your Finvest profile when signed in. On-chain NFT badges are optional when a wallet and badge contract are configured."
+          />
+        ) : null}
+      </CertificateModal>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import LandingPage from './pages/LandingPage';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
@@ -12,13 +13,15 @@ import FinancialGoals from './pages/FinancialGoals';
 
 function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/account" element={<AccountPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      {/* Protected routes send guests to `/account` */}
+      {/* Protected routes require sign-in or “Login as Guest” (see guestMode + ProtectedRoute) */}
       <Route
         path="/dashboard"
         element={
@@ -37,6 +40,7 @@ function App() {
       />
       <Route path="/financial-goals" element={<FinancialGoals />} />
     </Routes>
+    </>
   );
 }
 

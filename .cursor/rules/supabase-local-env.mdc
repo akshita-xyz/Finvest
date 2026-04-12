@@ -1,0 +1,13 @@
+---
+description: Local Supabase credentials live in gitignored .env files — do not ask the user to paste them again
+alwaysApply: true
+---
+
+# Finvest local Supabase
+
+- **Frontend**: `FRONTEND/.env` — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- **Backend**: `BACKEND/.env` — `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+
+These files are **gitignored**. The project URL is `https://xcrbtlqbbennnkmzdobk.supabase.co` (ref `xcrbtlqbbennnkmzdobk`). When Supabase env vars are needed for local dev or docs, read from those `.env` files in the workspace instead of asking the user to paste keys.
+
+Do **not** commit real keys into tracked files (`.env.example` stays placeholder-only).

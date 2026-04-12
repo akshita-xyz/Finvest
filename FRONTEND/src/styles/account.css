@@ -221,6 +221,88 @@
   box-shadow: 0 0 0 1px rgba(109, 180, 255, 0.08);
 }
 
+.account-nft-card--locked {
+  opacity: 0.92;
+  position: relative;
+  background: rgba(0, 0, 0, 0.38);
+  border-style: dashed;
+}
+
+.account-nft-card--locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: repeating-linear-gradient(
+    -12deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.03) 10px,
+    rgba(255, 255, 255, 0.03) 20px
+  );
+  pointer-events: none;
+}
+
+.account-nft-locked-block {
+  margin-top: 0.5rem;
+}
+
+.account-nft-lock-label {
+  margin: 0 0 0.25rem;
+  font-family: var(--M);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.account-nft-cta {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  font-family: var(--M);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid rgba(109, 180, 255, 0.45);
+  color: rgba(180, 215, 255, 0.95);
+  background: rgba(30, 60, 100, 0.35);
+}
+
+.account-nft-cta:hover {
+  border-color: rgba(109, 180, 255, 0.75);
+  color: #fff;
+}
+
+.account-nft-cert-wrap {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.account-nft-cert-btn {
+  align-self: flex-start;
+  font-family: var(--M);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(184, 134, 11, 0.45);
+  background: rgba(40, 35, 20, 0.35);
+  color: #fde68a;
+  cursor: pointer;
+}
+
+.account-nft-cert-btn:hover {
+  border-color: #d4a84b;
+  color: #fffbeb;
+}
+
 .account-nft-card-head {
   display: flex;
   align-items: center;
@@ -493,6 +575,33 @@
 .auth-card--account .account-nft-card--open {
   border-color: rgba(61, 138, 232, 0.45);
   box-shadow: 0 0 0 1px rgba(61, 138, 232, 0.12), 0 6px 20px rgba(61, 138, 232, 0.1);
+}
+
+.auth-card--account .account-nft-card--locked {
+  background: rgba(236, 242, 250, 0.55);
+  border-color: rgba(120, 140, 170, 0.35);
+  border-style: dashed;
+}
+
+.auth-card--account .account-nft-lock-label {
+  color: #94a3b8;
+}
+
+.auth-card--account .account-nft-cta {
+  border-color: rgba(61, 138, 232, 0.45);
+  color: #1d4ed8;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.auth-card--account .account-nft-cta:hover {
+  border-color: #2563eb;
+  color: #1e3a8a;
+}
+
+.auth-card--account .account-nft-cert-btn {
+  border-color: rgba(180, 140, 60, 0.45);
+  background: rgba(255, 251, 235, 0.95);
+  color: #92400e;
 }
 
 .auth-card--account .account-nft-card-head h3 {

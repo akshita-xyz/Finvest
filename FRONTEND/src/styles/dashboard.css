@@ -11,7 +11,7 @@
   width: 290px;
   position: fixed;
   inset: 0 auto 0 0;
-  /* Match page chrome — avoids a separate “warm” strip vs main */
+  /* Match page chrome: avoids a separate “warm” strip vs main */
   background: #f3f5f9;
   border-right: 1px solid #e2e8f0;
   padding: 28px 22px;
@@ -343,6 +343,14 @@
   color: #64748b;
   font-size: 0.92rem;
   line-height: 1.6;
+}
+
+.db-section-lead {
+  margin: 6px 0 14px;
+  max-width: 52rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .db-behavior-wrap {
@@ -1007,7 +1015,7 @@
   color: #78350f;
 }
 
-/* TradingView Lightweight Charts — risk simulator */
+/* TradingView Lightweight Charts: risk simulator */
 .db-risk-lwc {
   margin: 12px 0 18px;
   border: 1px solid #e2e8f0;
@@ -1327,6 +1335,47 @@
 
 .db-emotion-results {
   padding: 4px 0 8px;
+}
+
+.db-emotion-cert-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 720px) {
+  .db-emotion-cert-row {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .db-emotion-cert-preview {
+    flex: 1 1 52%;
+    min-width: 0;
+  }
+}
+
+.db-emotion-cert-expand {
+  align-self: center;
+  font-family: var(--M);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #c9a227;
+  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+  color: #78350f;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.db-emotion-cert-expand:hover {
+  border-color: #a16207;
+  color: #451a03;
 }
 
 .db-emotion-archetype {
@@ -2052,6 +2101,17 @@
 
 .db-profile-sync--warn {
   color: #b45309;
+}
+
+a.db-profile-sync-link {
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a.db-profile-sync-link:hover {
+  color: #1e40af;
 }
 
 .db-fear-slider-label {

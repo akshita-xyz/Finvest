@@ -49,12 +49,7 @@ export async function ensureUserProfile(user) {
     '';
   const { error } = await supabase.from('user_profiles').upsert(
     {
-      user_id: user.id,
-      email: user.email ?? '',
-      display_name: displayName,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id' }
+      user_id: user.id, email: user.email ?? '', display_name: displayName, updated_at: new Date().toISOString(), }, { onConflict: 'user_id' }
   );
   return { error };
 }
@@ -71,9 +66,7 @@ export async function updateUserProfileFields(userId, fields) {
   const { data, error } = await supabase
     .from('user_profiles')
     .update({
-      ...fields,
-      updated_at: new Date().toISOString(),
-    })
+      ...fields, updated_at: new Date().toISOString(), })
     .eq('user_id', userId)
     .select()
     .maybeSingle();

@@ -18,8 +18,8 @@
  *
  * The second value can be the legacy **anon** JWT (`eyJ...`) or the newer **publishable** key (`sb_publishable_...`).
  *
- * Copy values from Supabase Dashboard → Project Settings → API.
- * Use the anon (public) key in the browser — never the service_role key.
+ * Copy values from Supabase Dashboard under Project Settings, API.
+ * Use the anon (public) key in the browser. Never the service_role key.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -66,7 +66,7 @@ if (import.meta.env.DEV && isSupabaseConfigured && supabaseUrl && supabaseAnonKe
   if (host && ref && ref !== host) {
     console.warn(
       `[supabaseClient] VITE_SUPABASE_URL host "${host}" does not match anon JWT ref "${ref}". ` +
-        'Copy both values from the same Supabase project (Settings → API), then restart the dev server.'
+        'Copy both values from the same Supabase project (Settings, API), then restart the dev server.'
     );
   }
 }
@@ -89,9 +89,6 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl.trim(), supabaseAnonKey.trim(), {
       auth: {
         // Persist session across reloads in the browser
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true, // handles magic links / OAuth redirects
-      },
-    })
+        persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, // handles magic links / OAuth redirects
+      }, })
   : null;

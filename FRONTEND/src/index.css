@@ -43,7 +43,7 @@ body {
 
 /*
  * Custom pointer (#cur/#dot) only exists on the landing page. All other routes
- * must use the system cursor — otherwise cursor:none leaves an invisible mouse.
+ * must use the system cursor; otherwise cursor:none leaves an invisible mouse.
  */
 body:not(:has(#cur)) {
   cursor: auto !important;
@@ -336,7 +336,7 @@ body.cc #cur {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   NAVIGATION — landing (horizontal liquid glass)
+   NAVIGATION: landing (horizontal liquid glass)
    ═══════════════════════════════════════════════════════════════ */
 .nav-landing {
   position: relative;
@@ -560,6 +560,32 @@ body.cc #cur {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.25) inset,
     0 10px 28px rgba(109, 180, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.nav-landing__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.nav-landing__cta--ghost {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.nav-landing__cta--ghost:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(109, 180, 255, 0.4);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.28) inset,
+    0 10px 26px rgba(109, 180, 255, 0.1);
   transform: translateY(-1px);
 }
 

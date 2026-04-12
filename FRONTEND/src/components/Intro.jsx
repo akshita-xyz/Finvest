@@ -12,13 +12,7 @@ const Intro = ({ onComplete }) => {
   const wordRefs = useRef([]);
 
   const words = [
-    { text: "feel", cls: "iw", delay: 0, gap: 80 },
-    { text: "the", cls: "iw", delay: 0, gap: 80 },
-    { text: "risk", cls: "iw accent", delay: 0, gap: 80 },
-    { text: "master", cls: "iw", delay: 100, gap: 80 },
-    { text: "the", cls: "iw", delay: 0, gap: 80 },
-    { text: "outcome", cls: "iw accent", delay: 0, gap: 0 },
-  ];
+    { text: "feel", cls: "iw", delay: 0, gap: 80 }, { text: "the", cls: "iw", delay: 0, gap: 80 }, { text: "risk", cls: "iw accent", delay: 0, gap: 80 }, { text: "master", cls: "iw", delay: 100, gap: 80 }, { text: "the", cls: "iw", delay: 0, gap: 80 }, { text: "outcome", cls: "iw accent", delay: 0, gap: 0 }, ];
 
   useEffect(() => {
     let unmounted = false;

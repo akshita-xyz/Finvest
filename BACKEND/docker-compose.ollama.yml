@@ -1,0 +1,16 @@
+# One-command local Ollama (no Windows installer): from this folder run:
+#   docker compose -f docker-compose.ollama.yml up -d
+# Then: docker exec -it finvest-ollama ollama pull llama3.2
+# Keep BACKEND/.env as OLLAMA_HOST=http://127.0.0.1:11434 (default).
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: finvest-ollama
+    ports:
+      - '11434:11434'
+    volumes:
+      - finvest_ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  finvest_ollama_data:

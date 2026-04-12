@@ -7,13 +7,7 @@ const Cursor = () => {
 
   const updateCursorColor = (y, cur, dot) => {
     const darkSections = [
-      '#about',
-      '#hack-approach',
-      '#hack-workflow',
-      '#why-us',
-      '#hack-project',
-      '#hack-footer',
-    ];
+      '#about', '#hack-approach', '#hack-workflow', '#why-us', '#hack-project', '#hack-footer', ];
     let onDark = false;
     darkSections.forEach((id) => {
       const s = document.querySelector(id);

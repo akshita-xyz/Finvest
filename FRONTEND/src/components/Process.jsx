@@ -34,7 +34,7 @@ const Process = () => {
             <p className="ps">Step 04</p>
             <p className="pt">Act</p>
             <p className="pd">
-              Receive ranked action recommendations — or let the system execute automatically at machine speed.
+              Receive ranked action recommendations , or let the system execute automatically at machine speed.
             </p>
           </div>
         </div>

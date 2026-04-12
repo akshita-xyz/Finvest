@@ -35,7 +35,7 @@ const LearnMore = ({ onOpenModal }) => {
             <p className="lm-num">03</p>
             <p className="lm-title">Decision engine</p>
             <p className="lm-desc">
-              Probability scores, move ranges, position sizing — aligned to your risk appetite.
+              Probability scores, move ranges, position sizing , aligned to your risk appetite.
             </p>
             <div className="lm-arrow">
               <svg viewBox="0 0 10 10">

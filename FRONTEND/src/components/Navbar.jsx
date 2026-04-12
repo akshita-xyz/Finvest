@@ -2,14 +2,11 @@ import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, creat
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Info, ListOrdered, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { setGuestMode } from '../lib/guestMode';
 import '../styles/account.css';
 
 const NAV_ITEMS = [
-  { id: 'hero', href: '#hero', label: 'Home', Icon: Home },
-  { id: 'about', href: '#about', label: 'About', Icon: Info },
-  { id: 'hack-workflow', href: '#hack-workflow', label: 'Workflow', Icon: ListOrdered },
-  { id: 'why-us', href: '#why-us', label: 'Why us', Icon: Sparkles },
-];
+  { id: 'hero', href: '#hero', label: 'Home', Icon: Home }, { id: 'about', href: '#about', label: 'About', Icon: Info }, { id: 'hack-workflow', href: '#hack-workflow', label: 'Workflow', Icon: ListOrdered }, { id: 'why-us', href: '#why-us', label: 'Why us', Icon: Sparkles }, ];
 
 const NAV_IDS = NAV_ITEMS.map((item) => item.id);
 
@@ -112,7 +109,7 @@ const Navbar = () => {
       <div className="nav-landing__wrap">
         <div className="nav-landing__glass">
           <div className="nav-landing__inner">
-            <button type="button" className="nav-landing__logo nav-landing__logo--text" onClick={scrollToTop} aria-label="Finvest — scroll to top">
+            <button type="button" className="nav-landing__logo nav-landing__logo--text" onClick={scrollToTop} aria-label="Finvest, scroll to top">
               Finvest
             </button>
 
@@ -197,9 +194,23 @@ const Navbar = () => {
                   ) : null}
                 </>
               ) : (
-                <Link to="/account" className="nav-cta nav-landing__cta" aria-label="Log in or sign up">
-                  Log in / Sign up
-                </Link>
+                <div className="nav-landing__ctas">
+                  <Link
+                    to="/dashboard"
+                    className="nav-cta nav-landing__cta"
+                    aria-label="Log in as guest: browse the app without signing in"
+                    onClick={() => setGuestMode(true)}
+                  >
+                    Login as Guest
+                  </Link>
+                  <Link
+                    to="/account"
+                    className="nav-cta nav-landing__cta nav-landing__cta--ghost"
+                    aria-label="Log in or sign up"
+                  >
+                    Log in / Sign up
+                  </Link>
+                </div>
               )}
             </div>
           </div>

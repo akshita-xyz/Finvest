@@ -1,34 +1,23 @@
 /**
- * @fileoverview Logged-in “Personalized Portfolio” area: sub-nav + fear calculator,
- * timed assessment quiz, suitability copy, and AI-style allocation summary (persisted in Supabase `dashboard_prefs`).
+ * @fileoverview Logged-in “Personalized Portfolio” area: sub-nav + fear calculator, * timed assessment quiz, suitability copy, and AI-style allocation summary (persisted in Supabase `dashboard_prefs`).
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
-  fetchUserProfile,
-  mergeDashboardPrefs,
-  updateUserProfileFields,
-  classificationFromFearScore,
-} from '../services/userProfileService';
+  fetchUserProfile, mergeDashboardPrefs, updateUserProfileFields, classificationFromFearScore, } from '../services/userProfileService';
 import { allocationFromFearScore } from '../lib/personalizedPortfolioEngine';
 import {
-  getFirstIncompletePPTab,
-  getPPRoadmapCompletion,
-} from '../lib/personalizedPortfolioRoadmap';
+  getFirstIncompletePPTab, getPPRoadmapCompletion, } from '../lib/personalizedPortfolioRoadmap';
 import AssessmentQuiz from './personalized/AssessmentQuiz';
+import { CertificateModal, FinvestCertificate } from '../components/FinvestCertificate';
 import '../styles/pp-hub.css';
 
 const TABS = ['overview', 'calculator', 'quiz', 'where', 'portfolio'];
 
 const ROADMAP_STEPS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'calculator', label: 'Fear score' },
-  { id: 'quiz', label: 'Personality quiz' },
-  { id: 'where', label: 'Where to invest' },
-  { id: 'portfolio', label: 'My portfolio' },
-];
+  { id: 'overview', label: 'Overview' }, { id: 'calculator', label: 'Fear score' }, { id: 'quiz', label: 'Personality quiz' }, { id: 'where', label: 'Where to invest' }, { id: 'portfolio', label: 'My portfolio' }, ];
 
 export default function PersonalizedPortfolioHub() {
   const { user } = useAuth();
@@ -46,6 +35,8 @@ export default function PersonalizedPortfolioHub() {
   const [fearSaved, setFearSaved] = useState(false);
   const [quizBusy, setQuizBusy] = useState(false);
   const [quizKey, setQuizKey] = useState(0);
+  /** After quiz submit: show formal certificate before jumping to portfolio tab. */
+  const [portfolioCertAward, setPortfolioCertAward] = useState(/** @type {Record<string, unknown> | null} */ (null));
 
   const assessment = profile?.dashboard_prefs?.assessment;
 
@@ -104,17 +95,14 @@ export default function PersonalizedPortfolioHub() {
       }
       if (next === 'quiz' && next !== current) setQuizKey((k) => k + 1);
       setSearchParams({ tab: next });
-    },
-    [user, profile, tabParam, setSearchParams]
+    }, [user, profile, tabParam, setSearchParams]
   );
 
   const saveFearScore = async () => {
     if (!user?.id) return;
     const n = Math.min(100, Math.max(1, Math.round(fearDraft)));
     const { data, error } = await updateUserProfileFields(user.id, {
-      fear_score: n,
-      classification: classificationFromFearScore(n),
-    });
+      fear_score: n, classification: classificationFromFearScore(n), });
     if (!error && data) setProfile(data);
     setFearSaved(true);
     setTimeout(() => setFearSaved(false), 2000);
@@ -122,19 +110,21 @@ export default function PersonalizedPortfolioHub() {
 
   const handleQuizComplete = async (result) => {
     if (!user?.id) return;
+    const issuedAt = new Date().toISOString();
     await mergeDashboardPrefs(user.id, {
       assessment: result,
       nft_badges: {
         portfolioCertificate: true,
-        portfolioCertificateAt: new Date().toISOString(),
+        portfolioCertificateAt: issuedAt,
+        portfolioClusterLabel: result.clusterLabel,
+        portfolioFearScore: result.traits?.fearScore,
+        portfolioAllocationLabel: result.allocation?.label,
       },
     });
     const fs = result.traits?.fearScore;
     if (fs != null && Number.isFinite(fs)) {
       await updateUserProfileFields(user.id, {
-        fear_score: Math.round(fs),
-        classification: classificationFromFearScore(fs),
-      });
+        fear_score: Math.round(fs), classification: classificationFromFearScore(fs), });
       setFearDraft(Math.min(100, Math.max(1, Math.round(fs))));
     }
     const { data: fresh } = await fetchUserProfile(user.id);
@@ -144,13 +134,15 @@ export default function PersonalizedPortfolioHub() {
           ? fresh.dashboard_prefs.ppRoadmap
           : {};
       await mergeDashboardPrefs(user.id, {
-        ppRoadmap: { ...prevRm, whereVisited: true, portfolioVisited: true },
-      });
+        ppRoadmap: { ...prevRm, whereVisited: true, portfolioVisited: true }, });
     }
     const { data } = await fetchUserProfile(user.id);
     if (data) setProfile(data);
-    setTab('portfolio');
+    setPortfolioCertAward(result);
   };
+
+  const recipientLabel =
+    user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Finvest learner';
 
   return (
     <div className="pp-hub pp-hub--split">
@@ -187,8 +179,7 @@ export default function PersonalizedPortfolioHub() {
         <header className="pp-hub-header">
           <h1 className="pp-hub-title">Decode Your Finance Self</h1>
           <p className="pp-hub-lead">
-            Timed questions, hesitation signals, and a simple ML-style cluster model shape your fear score (1–100),
-            investor persona, and a suggested allocation — saved to your account for this Finvest prototype.
+            Timed questions, hesitation signals, and a simple ML-style cluster model shape your fear score (1 to 100), investor persona, and a suggested allocation , saved to your account for this Finvest prototype.
           </p>
         </header>
 
@@ -198,7 +189,7 @@ export default function PersonalizedPortfolioHub() {
             <h2 className="pp-card-title">Built for {user?.user_metadata?.full_name || user?.email || 'you'}</h2>
             <p className="pp-card-desc">
               Use the roadmap on the left: calibrate fear score manually, take the personality quiz (we time each
-              answer), then review where you might fit — trading vs long-term vs loans — and your generated portfolio
+              answer), then review where you might fit , trading vs long-term vs loans , and your generated portfolio
               mix.
             </p>
             {assessment?.completedAt ? (
@@ -207,7 +198,7 @@ export default function PersonalizedPortfolioHub() {
                 <strong>{assessment.clusterLabel}</strong> · Fear score: <strong>{assessment.traits?.fearScore}</strong>
               </p>
             ) : (
-              <p className="pp-muted">You have not completed the quiz yet — start with “Personality quiz”.</p>
+              <p className="pp-muted">You have not completed the quiz yet , start with “Personality quiz”.</p>
             )}
             <button type="button" className="pp-btn-primary" style={{ marginTop: 16 }} onClick={() => setTab('quiz')}>
               Start or retake quiz
@@ -218,10 +209,10 @@ export default function PersonalizedPortfolioHub() {
         {tab === 'calculator' && (
           <section className="pp-card">
             <p className="pp-eyebrow">Fear score calculator</p>
-            <h2 className="pp-card-title">Fear score (1 – 100)</h2>
+            <h2 className="pp-card-title">Fear score (1 to 100)</h2>
             <p className="pp-card-desc">
               Higher = more cautious / sensitive to loss; lower = more comfortable with volatility. This syncs with
-              your main dashboard and Supabase profile.
+              your main dashboard.
             </p>
             <div className="pp-stat">
               <span>Current value</span>
@@ -255,7 +246,7 @@ export default function PersonalizedPortfolioHub() {
             <p className="pp-eyebrow">Suitability (educational, not advice)</p>
             <h2 className="pp-card-title">Where should you focus?</h2>
             {!assessment ? (
-              <p className="pp-muted">Complete the quiz first — we personalize this section from your answers and timing.</p>
+              <p className="pp-muted">Complete the quiz first , we personalize this section from your answers and timing.</p>
             ) : (
               <>
                 <p className="pp-card-desc">{assessment.suitability?.tradingStyle}</p>
@@ -320,15 +311,51 @@ export default function PersonalizedPortfolioHub() {
                 </p>
               </>
             )}
-            {assessment ? (
-              <p className="pp-muted" style={{ marginTop: 16 }}>
-                Static check: same fear score via calculator →{' '}
-                {allocationFromFearScore(assessment.traits?.fearScore ?? 50).label}
-              </p>
-            ) : null}
           </section>
         )}
       </main>
+
+      <CertificateModal
+        open={Boolean(portfolioCertAward)}
+        onClose={() => {
+          setPortfolioCertAward(null);
+          setTab('portfolio');
+        }}
+        title="Certificate unlocked"
+        actions={
+          <>
+            <button
+              type="button"
+              className="finvest-cert-modal-btn"
+              onClick={() => {
+                setPortfolioCertAward(null);
+                setTab('portfolio');
+              }}
+            >
+              Continue to My portfolio
+            </button>
+            <button type="button" className="finvest-cert-modal-btn finvest-cert-modal-btn--ghost" onClick={() => window.print()}>
+              Print / save as PDF
+            </button>
+          </>
+        }
+      >
+        {portfolioCertAward ? (
+          <FinvestCertificate
+            variant="decode"
+            recipientName={recipientLabel}
+            awardTitle={String(portfolioCertAward.clusterLabel || 'Investor profile')}
+            detailLines={[
+              `Modeled fear score: ${portfolioCertAward.traits?.fearScore ?? '—'}/100`,
+              portfolioCertAward.allocation
+                ? `Suggested mix: ${portfolioCertAward.allocation.stocks}% stocks · ${portfolioCertAward.allocation.bonds}% bonds · ${portfolioCertAward.allocation.cash}% cash (${portfolioCertAward.allocation.label || ''})`
+                : '',
+            ].filter(Boolean)}
+            issuedAtIso={portfolioCertAward.completedAt || new Date().toISOString()}
+            finePrint="Saved to your Finvest profile. On-chain NFT badges are optional when a wallet and badge contract are configured."
+          />
+        ) : null}
+      </CertificateModal>
     </div>
   );
 }

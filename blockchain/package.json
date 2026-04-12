@@ -5,7 +5,12 @@
   "description": "Finvest achievement NFT (ERC-721) — from code/swagat branch, extended for production mint control",
   "scripts": {
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js"
+    "deploy": "hardhat run scripts/deploy.js",
+    "node:chain": "hardhat node",
+    "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "env:sync": "node scripts/sync-frontend-env.js",
+    "badge:auto-local": "node scripts/run-local-badge-stack.js"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
@@ -13,6 +18,7 @@
     "hardhat": "^2.22.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.6"
+    "@openzeppelin/contracts": "^4.9.6",
+    "dotenv": "^16.4.5"
   }
 }

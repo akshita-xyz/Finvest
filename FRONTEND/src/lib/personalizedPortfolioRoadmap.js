@@ -15,12 +15,7 @@ export function getPPRoadmapCompletion(profile) {
   const fearOk = profile?.fear_score != null && Number.isFinite(Number(profile.fear_score));
 
   return {
-    overview: Boolean(profile),
-    calculator: fearOk,
-    quiz: Boolean(assessment?.completedAt),
-    where: Boolean(assessment?.completedAt) && Boolean(roadmap.whereVisited),
-    portfolio: Boolean(assessment?.completedAt) && Boolean(roadmap.portfolioVisited),
-  };
+    overview: Boolean(profile), calculator: fearOk, quiz: Boolean(assessment?.completedAt), where: Boolean(assessment?.completedAt) && Boolean(roadmap.whereVisited), portfolio: Boolean(assessment?.completedAt) && Boolean(roadmap.portfolioVisited), };
 }
 
 /**

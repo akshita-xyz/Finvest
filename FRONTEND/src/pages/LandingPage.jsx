@@ -31,13 +31,8 @@ function LandingPage() {
       const scrollY = window.scrollY;
       const parallaxSections = [
         {
-          container: "#hero",
-          layers: [
-            { id: "hero-layer-far", speed: 0.3 },
-            { id: "hero-layer-mid", speed: 0.6 },
-          ],
-        },
-      ];
+          container: "#hero", layers: [
+            { id: "hero-layer-far", speed: 0.3 }, { id: "hero-layer-mid", speed: 0.6 }, ], }, ];
 
       parallaxSections.forEach((section) => {
         const container = document.querySelector(section.container);
@@ -126,8 +121,7 @@ function LandingPage() {
         es.forEach((e) => {
           if (e.isIntersecting) e.target.classList.add("on");
         });
-      },
-      { threshold: 0.09 }
+      }, { threshold: 0.09 }
     );
     document.querySelectorAll(".rv,.rl").forEach((el) => ob.observe(el));
     

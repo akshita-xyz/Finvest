@@ -9,14 +9,10 @@ import {
 import { RISK_CHART_TIMEFRAMES, fetchYahooChartOHLCV } from '../lib/marketChartData';
 
 function formatPrice(n, currency = 'USD') {
-  if (!Number.isFinite(n)) return '—';
+  if (!Number.isFinite(n)) return '';
   try {
     return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency.length === 3 ? currency : 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
+      style: 'currency', currency: currency.length === 3 ? currency : 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2, }).format(n);
   } catch {
     return n.toFixed(2);
   }
@@ -46,16 +42,13 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
     const cur = meta?.currency || 'USD';
     currencyRef.current = cur;
     candleSeries.applyOptions({
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-    });
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 }, });
 
     candleSeries.setData(candleData);
     volSeries.setData(volumeData);
     chartRef.current?.applyOptions({
       localization: {
-        priceFormatter: (p) => formatPrice(p, cur),
-      },
-    });
+        priceFormatter: (p) => formatPrice(p, cur), }, });
     chartRef.current?.timeScale().fitContent();
 
     const last = candleData[candleData.length - 1];
@@ -73,56 +66,21 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
 
     const chart = createChart(el, {
       layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#0f172a',
-        fontSize: 12,
-      },
-      grid: {
-        vertLines: { color: '#e2e8f0', style: 1 },
-        horzLines: { color: '#e2e8f0', style: 1 },
-      },
-      crosshair: {
-        mode: CrosshairMode.MagnetOHLC,
-        vertLine: { color: '#94a3b8', width: 1, style: 2, labelBackgroundColor: '#334155' },
-        horzLine: { color: '#94a3b8', width: 1, style: 2, labelBackgroundColor: '#334155' },
-      },
-      rightPriceScale: {
-        borderColor: '#cbd5e1',
-        scaleMargins: { top: 0.08, bottom: 0.22 },
-      },
-      timeScale: {
-        borderColor: '#cbd5e1',
-        timeVisible: true,
-        secondsVisible: false,
-        rightOffset: 4,
-      },
-      localization: {
-        priceFormatter: (p) => formatPrice(p, currencyRef.current),
-      },
-      width: el.clientWidth,
-      height: 440,
-    });
+        background: { type: ColorType.Solid, color: '#ffffff' }, textColor: '#0f172a', fontSize: 12, }, grid: {
+        vertLines: { color: '#e2e8f0', style: 1 }, horzLines: { color: '#e2e8f0', style: 1 }, }, crosshair: {
+        mode: CrosshairMode.MagnetOHLC, vertLine: { color: '#94a3b8', width: 1, style: 2, labelBackgroundColor: '#334155' }, horzLine: { color: '#94a3b8', width: 1, style: 2, labelBackgroundColor: '#334155' }, }, rightPriceScale: {
+        borderColor: '#cbd5e1', scaleMargins: { top: 0.08, bottom: 0.22 }, }, timeScale: {
+        borderColor: '#cbd5e1', timeVisible: true, secondsVisible: false, rightOffset: 4, }, localization: {
+        priceFormatter: (p) => formatPrice(p, currencyRef.current), }, width: el.clientWidth, height: 440, });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#16a34a',
-      downColor: '#dc2626',
-      borderVisible: true,
-      wickVisible: true,
-      borderUpColor: '#15803d',
-      borderDownColor: '#b91c1c',
-      wickUpColor: '#15803d',
-      wickDownColor: '#b91c1c',
-    });
+      upColor: '#16a34a', downColor: '#dc2626', borderVisible: true, wickVisible: true, borderUpColor: '#15803d', borderDownColor: '#b91c1c', wickUpColor: '#15803d', wickDownColor: '#b91c1c', });
 
     const volSeries = chart.addSeries(HistogramSeries, {
-      priceScaleId: 'vol',
-      priceFormat: { type: 'volume' },
-    });
+      priceScaleId: 'vol', priceFormat: { type: 'volume' }, });
 
     chart.priceScale('vol').applyOptions({
-      scaleMargins: { top: 0.82, bottom: 0 },
-      borderVisible: false,
-    });
+      scaleMargins: { top: 0.82, bottom: 0 }, borderVisible: false, });
 
     chartRef.current = chart;
     candleRef.current = candleSeries;
@@ -142,11 +100,7 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
         return;
       }
       setOhlc({
-        o: row.open,
-        h: row.high,
-        l: row.low,
-        c: row.close,
-      });
+        o: row.open, h: row.high, l: row.low, c: row.close, });
     });
 
     const ro = new ResizeObserver(() => {
@@ -181,7 +135,7 @@ export default function RiskCandlestickChart({ symbol, finnhubToken = '' }) {
         if (cancelled) return;
         if (!data) {
           setError(
-            'Could not load chart data. On Vercel, the app uses /api/market/yahoo-chart — redeploy after pulling the latest commit. Locally: npm run dev (/__yahoo). Optional: VITE_BACKEND_URL to an API with the same route, or Finnhub candle access + VITE_FINNHUB_API_KEY / FINNHUB_API_KEY.'
+            'Could not load chart data. On Vercel, the app uses /api/market/yahoo-chart , redeploy after pulling the latest commit. Locally: npm run dev (/__yahoo). Optional: VITE_BACKEND_URL to an API with the same route, or Finnhub candle access + VITE_FINNHUB_API_KEY / FINNHUB_API_KEY.'
           );
           candleRef.current?.setData([]);
           volRef.current?.setData([]);

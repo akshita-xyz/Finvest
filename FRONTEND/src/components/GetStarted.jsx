@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 
 const GetStarted = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    companyName: '',
-    role: '',
-    aum: ''
+    firstName: '', lastName: '', email: '', companyName: '', role: '', aum: ''
   });
 
   const handleChange = (e) => {
@@ -108,12 +103,12 @@ const GetStarted = () => {
             <select name="aum" aria-label="Assets under management" value={formData.aum} onChange={handleChange}>
               <option value="" disabled>Assets under management</option>
               <option value="Under $1M">Under $1M</option>
-              <option value="$1M – $10M">$1M – $10M</option>
-              <option value="$10M – $100M">$10M – $100M</option>
+              <option value="$1M to $10M">$1M to $10M</option>
+              <option value="$10M to $100M">$10M to $100M</option>
               <option value="$100M+">$100M+</option>
             </select>
             <button type="submit" className="btn-p gform-submit" style={{ width: '100%', marginTop: '4px' }}>
-              <span>Create free account →</span>
+              <span>Create free account</span>
             </button>
             <p className="gform-note">
               No credit card required · Cancel anytime · SOC 2 certified

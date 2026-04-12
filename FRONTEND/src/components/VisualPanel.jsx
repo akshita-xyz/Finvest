@@ -23,14 +23,7 @@ const VisualPanel = ({ onOpenModal }) => {
       const cols = ["#6db4ff", "#ff4d1c", "#ffffff", "#ffffff"];
       for (let i = 0; i < 40; i++)
         pts.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
-          vx: (Math.random() - 0.5) * 0.48,
-          vy: (Math.random() - 0.5) * 0.48,
-          r: Math.random() * 2.4 + 0.8,
-          c: cols[Math.floor(Math.random() * cols.length)],
-          op: Math.random() * 0.45 + 0.25,
-        });
+          x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.48, vy: (Math.random() - 0.5) * 0.48, r: Math.random() * 2.4 + 0.8, c: cols[Math.floor(Math.random() * cols.length)], op: Math.random() * 0.45 + 0.25, });
     };
 
     const draw = () => {
@@ -50,9 +43,7 @@ const VisualPanel = ({ onOpenModal }) => {
       });
       for (let i = 0; i < pts.length; i++)
         for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x,
-            dy = pts[i].y - pts[j].y,
-            d = Math.sqrt(dx * dx + dy * dy);
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
           if (d < 85) {
             x.beginPath();
             x.moveTo(pts[i].x, pts[i].y);
@@ -91,7 +82,7 @@ const VisualPanel = ({ onOpenModal }) => {
             Watch risk move<br />in real time.
           </h2>
           <p>
-            Our engine visualises every position, signal, and anomaly as it happens — so nothing hides in the noise.
+            Our engine visualises every position, signal, and anomaly as it happens , so nothing hides in the noise.
           </p>
           <p>
             Particle clusters represent market correlations. Proximity encodes live risk exposure across instruments.

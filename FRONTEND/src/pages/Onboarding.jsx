@@ -4,23 +4,9 @@ import { AnimatePresence } from 'framer-motion';
 
 const questions = [
   {
-    id: 'goal',
-    title: "What's driving you?",
-    description: "Whether it's a house, retirement, or financial freedom — let's set the target.",
-    options: ['Buying a house', 'Retirement', 'Travel', 'Growing wealth'],
-  },
-  {
-    id: 'risk',
-    title: "How do you handle drops?",
-    description: "If your portfolio drops 20% in a month, what's your first move?",
-    options: ['Sell immediately', 'Wait it out', 'Buy more', 'Consult an advisor'],
-  },
-  {
-    id: 'salary',
-    title: "What's your playing field?",
-    description: "Knowing your income helps us simulate realistic growth.",
-    options: ['Under $50k', '$50k - $100k', '$100k - $200k', 'Over $200k'],
-  }
+    id: 'goal', title: "What's driving you?", description: "Whether it's a house, retirement, or financial freedom , let's set the target.", options: ['Buying a house', 'Retirement', 'Travel', 'Growing wealth'], }, {
+    id: 'risk', title: "How do you handle drops?", description: "If your portfolio drops 20% in a month, what's your first move?", options: ['Sell immediately', 'Wait it out', 'Buy more', 'Consult an advisor'], }, {
+    id: 'salary', title: "What's your playing field?", description: "Knowing your income helps us simulate realistic growth.", options: ['Under $50k', '$50k - $100k', '$100k - $200k', 'Over $200k'], }
 ];
 
 function Onboarding() {
@@ -81,7 +67,7 @@ function Onboarding() {
                   className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-gray-800 hover:border-gray-600 transition-all text-left p-4 rounded-xl text-lg flex items-center justify-between group"
                 >
                   {option}
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">›</span>
                 </button>
               ))}
             </div>

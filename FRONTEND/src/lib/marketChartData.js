@@ -18,16 +18,7 @@ function sanitizeQueryPart(s, fallback) {
 
 /** Preset ranges for the TradingView-style chart toolbar (Yahoo `range` + `interval`). */
 export const RISK_CHART_TIMEFRAMES = [
-  { id: '1D', label: '1D', range: '1d', interval: '5m' },
-  { id: '5D', label: '5D', range: '5d', interval: '15m' },
-  { id: '1M', label: '1M', range: '1mo', interval: '1h' },
-  { id: '3M', label: '3M', range: '3mo', interval: '1d' },
-  { id: '6M', label: '6M', range: '6mo', interval: '1d' },
-  { id: 'YTD', label: 'YTD', range: 'ytd', interval: '1d' },
-  { id: '1Y', label: '1Y', range: '1y', interval: '1d' },
-  { id: '5Y', label: '5Y', range: '5y', interval: '1wk' },
-  { id: 'ALL', label: 'All', range: 'max', interval: '1mo' },
-];
+  { id: '1D', label: '1D', range: '1d', interval: '5m' }, { id: '5D', label: '5D', range: '5d', interval: '15m' }, { id: '1M', label: '1M', range: '1mo', interval: '1h' }, { id: '3M', label: '3M', range: '3mo', interval: '1d' }, { id: '6M', label: '6M', range: '6mo', interval: '1d' }, { id: 'YTD', label: 'YTD', range: 'ytd', interval: '1d' }, { id: '1Y', label: '1Y', range: '1y', interval: '1d' }, { id: '5Y', label: '5Y', range: '5y', interval: '1wk' }, { id: 'ALL', label: 'All', range: 'max', interval: '1mo' }, ];
 
 function buildYahooChartUrls(symbol, range, interval) {
   const sym = sanitizeSymbol(symbol);
@@ -42,13 +33,11 @@ function buildYahooChartUrls(symbol, range, interval) {
     const base = String(backend).replace(/\/$/, '');
     urls.push(`${base}/api/market/yahoo-chart?${qs}`);
   }
-  // Production (e.g. Vercel): same-origin serverless proxy in /api/market/yahoo-chart.js
-  if (!import.meta.env.DEV) {
-    urls.push(`/api/market/yahoo-chart?${qs}`);
-  }
+  // Dev: prefer direct Yahoo proxy (fast). Then same-origin /api (Vite → BACKEND if running).
   if (import.meta.env.DEV) {
     urls.push(`/__yahoo${path}`);
   }
+  urls.push(`/api/market/yahoo-chart?${qs}`);
   return urls;
 }
 
@@ -103,18 +92,13 @@ export function parseYahooOHLCV(json, interval) {
     const vol = Number.isFinite(volRaw) && volRaw >= 0 ? volRaw : 0;
     const up = c >= o;
     volumeData.push({
-      time,
-      value: vol,
-      color: up ? 'rgba(22, 163, 74, 0.45)' : 'rgba(220, 38, 38, 0.45)',
-    });
+      time, value: vol, color: up ? 'rgba(22, 163, 74, 0.45)' : 'rgba(220, 38, 38, 0.45)', });
   }
 
   if (candleData.length < 2) return null;
 
   const meta = {
-    currency: r.meta?.currency || 'USD',
-    shortName: r.meta?.shortName || r.meta?.symbol || '',
-  };
+    currency: r.meta?.currency || 'USD', shortName: r.meta?.shortName || r.meta?.symbol || '', };
   return { candleData, volumeData, meta };
 }
 
@@ -173,18 +157,12 @@ export function parseFinnhubCandlesToOHLCV(data, resolution) {
     const vol = Number.isFinite(V?.[i]) && V[i] >= 0 ? V[i] : 0;
     const up = c >= o;
     volumeData.push({
-      time,
-      value: vol,
-      color: up ? 'rgba(22, 163, 74, 0.45)' : 'rgba(220, 38, 38, 0.45)',
-    });
+      time, value: vol, color: up ? 'rgba(22, 163, 74, 0.45)' : 'rgba(220, 38, 38, 0.45)', });
   }
 
   if (candleData.length < 2) return null;
   return {
-    candleData,
-    volumeData,
-    meta: { currency: 'USD', shortName: '' },
-  };
+    candleData, volumeData, meta: { currency: 'USD', shortName: '' }, };
 }
 
 /**
@@ -209,7 +187,7 @@ export async function fetchFinnhubChartOHLCV(symbol, range, interval, finnhubTok
   try {
     let out = await tryOnce(from, to);
     if (out) return out;
-    // Free tier often returns no_data for long daily windows — retry ~3 months.
+    // Free tier often returns no_data for long daily windows , retry ~3 months.
     if (to - from > 120 * day && ['D', 'W', 'M'].includes(String(resolution).toUpperCase())) {
       from = to - 93 * day;
       out = await tryOnce(from, to);

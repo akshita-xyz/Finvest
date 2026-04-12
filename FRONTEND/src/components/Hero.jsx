@@ -42,12 +42,7 @@ const Hero = () => {
       const n = Math.min(55, Math.floor((W * H) / 16000));
       for (let i = 0; i < n; i++)
         pts.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
-          vx: (Math.random() - 0.5) * 0.28,
-          vy: (Math.random() - 0.5) * 0.28,
-          r: Math.random() * 1.6 + 0.4,
-        });
+          x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.28, vy: (Math.random() - 0.5) * 0.28, r: Math.random() * 1.6 + 0.4, });
     };
 
     const draw = () => {
@@ -127,8 +122,7 @@ const Hero = () => {
           FINVEST
         </h1>
         <p id="hero-sub" className="hero-sub">
-          Feel the risk, master the outcome—risk simulation, behavioral insights,
-          and personalized portfolios to reduce investing fear before you commit
+          Feel the risk, master the outcome, risk simulation, behavioral insights, and personalized portfolios to reduce investing fear before you commit
           real capital.
         </p>
       </div>
@@ -136,7 +130,7 @@ const Hero = () => {
         <span className="hero-team-name">BANDWAGONS</span>
         <span className="hero-team-divider" aria-hidden>|</span>
         <p className="hero-team-tagline">
-          One team, endless curiosity—we build what moves people forward.
+          One team, endless curiosity, we build what moves people forward.
         </p>
       </div>
     </section>

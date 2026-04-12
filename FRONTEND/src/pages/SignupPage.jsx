@@ -1,5 +1,5 @@
 /**
- * @fileoverview Legacy route — unified account lives at `/account`.
+ * @fileoverview Legacy route , unified account lives at `/account`.
  */
 
 import { Navigate } from 'react-router-dom';

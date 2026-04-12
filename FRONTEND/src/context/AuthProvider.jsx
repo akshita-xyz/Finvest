@@ -1,5 +1,5 @@
 /**
- * @fileoverview Supabase Auth provider — session restore + `onAuthStateChange`.
+ * @fileoverview Supabase Auth provider , session restore + `onAuthStateChange`.
  *
  * Wrap once inside `BrowserRouter` (see `main.jsx`). Consume with `useAuth` from `../hooks/useAuth`.
  */
@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from './authContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { setGuestMode } from '../lib/guestMode';
 import { ensureUserProfile } from '../services/userProfileService';
 
 /** @typedef {import('@supabase/supabase-js').User} User */
@@ -17,8 +18,8 @@ import { ensureUserProfile } from '../services/userProfileService';
  * @typedef {Object} AuthContextValue
  * @property {User | null} user
  * @property {Session | null} session
- * @property {boolean} loading — true until first `getSession` resolves (skipped when Supabase is not configured)
- * @property {boolean} configured — mirrors `isSupabaseConfigured`
+ * @property {boolean} loading , true until first `getSession` resolves (skipped when Supabase is not configured)
+ * @property {boolean} configured , mirrors `isSupabaseConfigured`
  * @property {(email: string, password: string) => Promise<{ error: AuthError | null }>} signInWithPassword
  * @property {(email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ error: AuthError | null, needsEmailConfirmation?: boolean }>} signUpWithPassword
  * @property {() => Promise<{ error: AuthError | null }>} signOut
@@ -28,10 +29,8 @@ import { ensureUserProfile } from '../services/userProfileService';
 function notConfiguredError() {
   /** @type {AuthError} */
   const synthetic = {
-    name: 'ConfigError',
-    message:
-      'Supabase is not configured. Add VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY or SUPABASE_URL/SUPABASE_ANON_KEY to FRONTEND/.env (see .env.example).',
-  };
+    name: 'ConfigError', message:
+      'Supabase is not configured. Add VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY or SUPABASE_URL/SUPABASE_ANON_KEY to FRONTEND/.env (see .env.example).', };
   return synthetic;
 }
 
@@ -41,7 +40,7 @@ function notConfiguredError() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(/** @type {User | null} */ (null));
   const [session, setSession] = useState(/** @type {Session | null} */ (null));
-  // No Supabase client → nothing to hydrate; avoid synchronous setState in an effect (react-hooks/set-state-in-effect).
+  // No Supabase client: nothing to hydrate; avoid synchronous setState in an effect (react-hooks/set-state-in-effect).
   const [loading, setLoading] = useState(() => Boolean(supabase));
 
   useEffect(() => {
@@ -55,14 +54,16 @@ export function AuthProvider({ children }) {
       if (cancelled) return;
       setSession(s ?? null);
       setUser(s?.user ?? null);
+      if (s?.user) setGuestMode(false);
       setLoading(false);
     });
 
     const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+      data: { subscription }, } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
+      if (s?.user) setGuestMode(false);
+      if (event === 'SIGNED_OUT') setGuestMode(false);
     });
 
     return () => {
@@ -99,24 +100,22 @@ export function AuthProvider({ children }) {
         return { error: notConfiguredError(), needsEmailConfirmation: false };
       }
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: metadata },
-      });
+        email, password, options: { data: metadata }, });
       if (error) {
         return { error, needsEmailConfirmation: false };
       }
       const needsEmailConfirmation = Boolean(data.user && !data.session);
       return { error: null, needsEmailConfirmation };
-    },
-    []
+    }, []
   );
 
   const signOut = useCallback(async () => {
     if (!supabase) {
+      setGuestMode(false);
       return { error: notConfiguredError() };
     }
     const { error } = await supabase.auth.signOut();
+    setGuestMode(false);
     return { error };
   }, []);
 
@@ -134,16 +133,7 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      user,
-      session,
-      loading,
-      configured: isSupabaseConfigured,
-      signInWithPassword,
-      signUpWithPassword,
-      signOut,
-      updateUserMetadata,
-    }),
-    [user, session, loading, signInWithPassword, signUpWithPassword, signOut, updateUserMetadata]
+      user, session, loading, configured: isSupabaseConfigured, signInWithPassword, signUpWithPassword, signOut, updateUserMetadata, }), [user, session, loading, signInWithPassword, signUpWithPassword, signOut, updateUserMetadata]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

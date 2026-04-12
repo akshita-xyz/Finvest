@@ -49,14 +49,14 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
               <input type="email" placeholder="Work email" aria-label="Work email" required />
               <select aria-label="Company size" required defaultValue="">
                 <option value="" disabled>Company size</option>
-                <option value="1-10">1–10</option>
-                <option value="11-50">11–50</option>
-                <option value="51-200">51–200</option>
+                <option value="1-10">1 to 10</option>
+                <option value="11-50">11 to 50</option>
+                <option value="51-200">51 to 200</option>
                 <option value="200+">200+</option>
               </select>
               <div className="mf" style={{ padding: '20px 0 0 0' }}>
                 <button type="button" className="btn-g mc" onClick={onClose}><span>Cancel</span></button>
-                <button type="submit" className="btn-p"><span>Create account →</span></button>
+                <button type="submit" className="btn-p"><span>Create account</span></button>
               </div>
             </form>
           </div>
@@ -71,7 +71,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mb">
             <p>
-              Risk is a real-time platform that turns market complexity into clear, executable decisions — live data ingestion, probabilistic modelling, and automated execution in one layer.
+              Risk is a real-time platform that turns market complexity into clear, executable decisions with live data ingestion, probabilistic modelling, and automated execution in one layer.
             </p>
             <p>
               Used by hedge funds, prop desks, and institutional traders across 42 countries. Every signal visible and ranked within 12ms.
@@ -82,7 +82,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mf">
             <button className="btn-g mc" onClick={onClose}><span>Close</span></button>
-            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started →</span></button>
+            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started</span></button>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
               <input type="text" placeholder="Biggest risk challenge" aria-label="Challenge" required />
               <div className="mf" style={{ padding: '20px 0 0 0' }}>
                 <button type="button" className="btn-g mc" onClick={onClose}><span>Cancel</span></button>
-                <button type="submit" className="btn-p"><span>Book demo →</span></button>
+                <button type="submit" className="btn-p"><span>Book demo</span></button>
               </div>
             </form>
           </div>
@@ -118,13 +118,13 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mb">
             <p>
-              Our proprietary signal engine monitors 400+ live data sources — options flow, dark pool prints, macro releases, sentiment — simultaneously. Pattern recognition models trained on two decades of market history surface anomalies before they register on traditional indicators.
+              Our proprietary signal engine monitors 400+ live data sources (options flow, dark pool prints, macro releases, sentiment) simultaneously. Pattern recognition models trained on two decades of market history surface anomalies before they register on traditional indicators.
             </p>
             <p>Average signal lead time: 4.2 minutes ahead of price movement.</p>
           </div>
           <div className="mf">
             <button className="btn-g mc" onClick={onClose}><span>Close</span></button>
-            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started →</span></button>
+            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started</span></button>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mf">
             <button className="btn-g mc" onClick={onClose}><span>Close</span></button>
-            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started →</span></button>
+            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started</span></button>
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mf">
             <button className="btn-g mc" onClick={onClose}><span>Close</span></button>
-            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started →</span></button>
+            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started</span></button>
           </div>
         </div>
       </div>
@@ -183,7 +183,7 @@ const Modals = ({ activeModal, onClose, onOpenModal }) => {
           </div>
           <div className="mf">
             <button className="btn-g mc" onClick={onClose}><span>Close</span></button>
-            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started →</span></button>
+            <button className="btn-p" onClick={() => { onClose(); onOpenModal('m-gs'); }}><span>Get started</span></button>
           </div>
         </div>
       </div>

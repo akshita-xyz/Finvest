@@ -1,5 +1,5 @@
 /**
- * @fileoverview Single account hub: sign-in + sign-up (toggle), and when signed in —
+ * @fileoverview Single account hub: sign-in + sign-up (toggle), and when signed in,
  * links to dashboard tools, profile photo (URL), display name, sign out.
  */
 
@@ -18,12 +18,12 @@ function displayNameFromUser(user) {
   return user.user_metadata?.full_name || user.email?.split('@')[0] || 'Account';
 }
 
-/** Generic `fetch` failures — usually wrong `VITE_SUPABASE_URL`, DNS, or paused project. */
+/** Generic `fetch` failures, usually wrong `VITE_SUPABASE_URL`, DNS, or paused project. */
 function humanizeAuthError(message) {
   if (!message || typeof message !== 'string') return message || '';
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
     return (
-      'Cannot reach Supabase. In Supabase Dashboard → Project Settings → API, copy the exact ' +
+      'Cannot reach Supabase. In Supabase Dashboard, Project Settings, API, copy the exact ' +
       'Project URL and anon (public) key into FRONTEND/.env as VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY ' +
       '(or SUPABASE_URL/SUPABASE_ANON_KEY), save, then restart the dev server. A typo in the URL or key often causes this.'
     );
@@ -85,6 +85,7 @@ export default function AccountPage() {
             emotionCertificate: true,
             emotionCertificateAt: new Date(o.at).toISOString(),
             emotionArchetype: o.archetype,
+            emotionReadiness: typeof o.overallReadiness === 'number' ? o.overallReadiness : undefined,
           },
         }).then(({ data: d }) => {
           if (!cancelled && d) setProfileRow(d);
@@ -172,7 +173,7 @@ export default function AccountPage() {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
     if (file.size > 400 * 1024) {
-      setProfileMsg('Image too large — use a URL instead, or pick a file under 400KB.');
+      setProfileMsg('Image too large. Use a URL instead, or pick a file under 400KB.');
       return;
     }
     const reader = new FileReader();
@@ -276,6 +277,7 @@ export default function AccountPage() {
 
           <section className="account-panel">
             <ProfileNftCertificates
+              recipientName={displayNameFromUser(user)}
               dashboardPrefs={profileRow?.dashboard_prefs}
               walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
               onSaveWallet={async (address) => {

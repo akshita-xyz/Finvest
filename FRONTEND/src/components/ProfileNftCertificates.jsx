@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Award, Link2, Loader2, Lock, Sparkles } from 'lucide-react';
+import { CertificateModal, FinvestCertificate } from './FinvestCertificate';
 
 const EMOTION_STORAGE_KEY = 'finvest_emotion_mindset_v1';
 
@@ -20,9 +22,10 @@ function readEmotionLocalDone() {
  *   dashboardPrefs: Record<string, unknown> | null | undefined;
  *   walletFromMetadata: string;
  *   onSaveWallet: (address: string) => Promise<{ error?: Error | null }>;
+ *   recipientName: string;
  * }} props
  */
-export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetadata, onSaveWallet }) {
+export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetadata, onSaveWallet, recipientName }) {
   const nft = dashboardPrefs?.nft_badges && typeof dashboardPrefs.nft_badges === 'object' ? dashboardPrefs.nft_badges : {};
   const assessment = dashboardPrefs?.assessment;
   const portfolioEarned = Boolean(nft.portfolioCertificate || assessment?.completedAt);
@@ -36,6 +39,9 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
   const [chainLoading, setChainLoading] = useState(false);
   const [chainErr, setChainErr] = useState('');
   const [walletSaving, setWalletSaving] = useState(false);
+  const [certModal, setCertModal] = useState(/** @type {null | 'portfolio' | 'emotion'} */ (null));
+
+  const displayName = recipientName?.trim() || 'Finvest learner';
 
   useEffect(() => {
     setWalletDraft(walletFromMetadata || '');
@@ -53,10 +59,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
     try {
       const { fetchOnChainBadges } = await import('../lib/badgeNftClient');
       const rows = await fetchOnChainBadges({
-        rpcUrl: rpc,
-        contractAddress: contract,
-        walletAddress: w,
-      });
+        rpcUrl: rpc, contractAddress: contract, walletAddress: w, });
       setChainBadges(rows);
     } catch (e) {
       setChainErr(e instanceof Error ? e.message : 'Could not read chain');
@@ -104,6 +107,50 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
     }
   };
 
+  const portfolioIssued =
+    nft.portfolioCertificateAt ||
+    assessment?.completedAt ||
+    new Date().toISOString();
+  const portfolioTitle = String(nft.portfolioClusterLabel || assessment?.clusterLabel || 'Investor profile');
+  const portfolioLines = [
+    typeof nft.portfolioFearScore === 'number' || typeof assessment?.traits?.fearScore === 'number'
+      ? `Modeled fear score: ${nft.portfolioFearScore ?? assessment?.traits?.fearScore}/100`
+      : '',
+    assessment?.allocation
+      ? `Suggested mix: ${assessment.allocation.stocks}% stocks · ${assessment.allocation.bonds}% bonds · ${assessment.allocation.cash}% cash (${nft.portfolioAllocationLabel || assessment.allocation.label || ''})`
+      : '',
+  ].filter(Boolean);
+
+  const emotionIssued = (() => {
+    if (nft.emotionCertificateAt) return String(nft.emotionCertificateAt);
+    try {
+      const raw = localStorage.getItem(EMOTION_STORAGE_KEY);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o?.at) return new Date(o.at).toISOString();
+      }
+    } catch {
+      /* ignore */
+    }
+    return new Date().toISOString();
+  })();
+  const emotionTitle = String(nft.emotionArchetype || 'Investing mindset');
+  let emotionReadiness = nft.emotionReadiness;
+  if (typeof emotionReadiness !== 'number') {
+    try {
+      const raw = localStorage.getItem(EMOTION_STORAGE_KEY);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (typeof o.overallReadiness === 'number') emotionReadiness = o.overallReadiness;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const emotionLines = [
+    typeof emotionReadiness === 'number' ? `Readiness index: ${emotionReadiness}/100 across six mindset pillars.` : '',
+  ].filter(Boolean);
+
   return (
     <section className="account-nft" aria-labelledby="account-nft-title">
       <h2 id="account-nft-title" className="account-nft-title">
@@ -111,54 +158,141 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
         Certificates &amp; badges
       </h2>
       <p className="account-nft-lead">
-        Unlock proof when you finish learning flows. On-chain NFTs are optional — connect a wallet to show badges
-        minted by the contract owner.
+        Complete each learning flow to unlock a certificate stored on your profile. On-chain NFTs are optional: connect a
+        wallet to list badges the contract owner has minted to your address.
       </p>
 
       <div className="account-nft-grid">
-        <article className={`account-nft-card${portfolioEarned ? ' account-nft-card--open' : ''}`}>
+        <article className={`account-nft-card${portfolioEarned ? ' account-nft-card--open' : ' account-nft-card--locked'}`}>
           <div className="account-nft-card-head">
             {portfolioEarned ? <Award size={22} aria-hidden /> : <Lock size={22} aria-hidden />}
             <h3>Decode Your Finance Self</h3>
           </div>
           <p className="account-nft-card-desc">
-            Complete the timed <strong>Decode Your Finance Self</strong> personality quiz — your cluster and allocation are saved
-            to your profile.
+            Timed personality quiz: your investor cluster, fear score, and suggested allocation are saved to your account.
           </p>
           {portfolioEarned ? (
-            <p className="account-nft-meta">
-              Unlocked{' '}
-              {nft.portfolioCertificateAt
-                ? new Date(nft.portfolioCertificateAt).toLocaleString()
-                : assessment?.completedAt
-                  ? new Date(assessment.completedAt).toLocaleString()
-                  : ''}
-            </p>
+            <>
+              <p className="account-nft-meta">
+                Unlocked{' '}
+                {nft.portfolioCertificateAt
+                  ? new Date(nft.portfolioCertificateAt).toLocaleString()
+                  : assessment?.completedAt
+                    ? new Date(assessment.completedAt).toLocaleString()
+                    : ''}
+              </p>
+              <div className="account-nft-cert-wrap">
+                <FinvestCertificate
+                  variant="decode"
+                  recipientName={displayName}
+                  awardTitle={portfolioTitle}
+                  detailLines={portfolioLines}
+                  issuedAtIso={String(portfolioIssued)}
+                  finePrint="Profile record on Finvest. Optional on-chain badge via deployer mint."
+                  compact
+                />
+                <button type="button" className="account-nft-cert-btn" onClick={() => setCertModal('portfolio')}>
+                  View full certificate
+                </button>
+              </div>
+            </>
           ) : (
-            <p className="account-nft-locked">Locked — finish the quiz in Decode Your Finance Self.</p>
+            <div className="account-nft-locked-block">
+              <p className="account-nft-lock-label">Locked</p>
+              <p className="account-nft-locked">Take the quiz to unlock your certificate.</p>
+              <Link to="/personalized-portfolio?tab=quiz" className="account-nft-cta">
+                Open Decode Your Finance Self quiz
+              </Link>
+            </div>
           )}
         </article>
 
-        <article className={`account-nft-card${emotionEarned ? ' account-nft-card--open' : ''}`}>
+        <article className={`account-nft-card${emotionEarned ? ' account-nft-card--open' : ' account-nft-card--locked'}`}>
           <div className="account-nft-card-head">
             {emotionEarned ? <Award size={22} aria-hidden /> : <Lock size={22} aria-hidden />}
             <h3>Investing mindset</h3>
           </div>
           <p className="account-nft-card-desc">
-            Finish the <strong>Emotional Readiness Test</strong> flow on your dashboard — we save a certificate flag to your
-            account when you are signed in.
+            Emotional Readiness Test on your dashboard: strengths, growth areas, and a readiness index before you take
+            risk.
           </p>
           {emotionEarned ? (
-            <p className="account-nft-meta">
-              Unlocked{' '}
-              {nft.emotionCertificateAt ? new Date(nft.emotionCertificateAt).toLocaleString() : '(this device)'}{' '}
-              {nft.emotionArchetype ? <span className="account-nft-pill">{String(nft.emotionArchetype)}</span> : null}
-            </p>
+            <>
+              <p className="account-nft-meta">
+                Unlocked{' '}
+                {nft.emotionCertificateAt ? new Date(nft.emotionCertificateAt).toLocaleString() : '(this device)'}
+                {nft.emotionArchetype ? <span className="account-nft-pill">{String(nft.emotionArchetype)}</span> : null}
+              </p>
+              <div className="account-nft-cert-wrap">
+                <FinvestCertificate
+                  variant="emotion"
+                  recipientName={displayName}
+                  awardTitle={emotionTitle}
+                  detailLines={emotionLines.length ? emotionLines : ['Completed the Emotional Readiness Test.']}
+                  issuedAtIso={String(emotionIssued)}
+                  finePrint="Profile record on Finvest when signed in. Optional on-chain badge via deployer mint."
+                  compact
+                />
+                <button type="button" className="account-nft-cert-btn" onClick={() => setCertModal('emotion')}>
+                  View full certificate
+                </button>
+              </div>
+            </>
           ) : (
-            <p className="account-nft-locked">Locked — complete the Emotional Readiness Test on the Dashboard.</p>
+            <div className="account-nft-locked-block">
+              <p className="account-nft-lock-label">Locked</p>
+              <p className="account-nft-locked">Take the Emotional Readiness Test to unlock.</p>
+              <Link to="/dashboard#emotion-testing" className="account-nft-cta">
+                Go to Dashboard — Emotional Readiness
+              </Link>
+            </div>
           )}
         </article>
       </div>
+
+      <CertificateModal
+        open={certModal === 'portfolio' && portfolioEarned}
+        onClose={() => setCertModal(null)}
+        title="Decode Your Finance Self"
+        actions={
+          <button type="button" className="finvest-cert-modal-btn finvest-cert-modal-btn--ghost" onClick={() => window.print()}>
+            Print / save as PDF
+          </button>
+        }
+      >
+        {portfolioEarned ? (
+          <FinvestCertificate
+            variant="decode"
+            recipientName={displayName}
+            awardTitle={portfolioTitle}
+            detailLines={portfolioLines}
+            issuedAtIso={String(portfolioIssued)}
+            finePrint="Saved to your Finvest profile. On-chain NFT badges are optional when a wallet and badge contract are configured."
+          />
+        ) : null}
+      </CertificateModal>
+
+      <CertificateModal
+        open={certModal === 'emotion' && emotionEarned}
+        onClose={() => setCertModal(null)}
+        title="Investing mindset"
+        actions={
+          <button type="button" className="finvest-cert-modal-btn finvest-cert-modal-btn--ghost" onClick={() => window.print()}>
+            Print / save as PDF
+          </button>
+        }
+      >
+        {emotionEarned ? (
+          <FinvestCertificate
+            variant="emotion"
+            recipientName={displayName}
+            awardTitle={emotionTitle}
+            detailLines={emotionLines.length ? emotionLines : ['Completed the Emotional Readiness Test.']}
+            issuedAtIso={String(emotionIssued)}
+            finePrint="Saved to your Finvest profile when signed in. On-chain NFT badges are optional when a wallet and badge contract are configured."
+          />
+        ) : null}
+      </CertificateModal>
 
       {contract && rpc ? (
         <div className="account-nft-chain">
@@ -167,7 +301,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
             On-chain badges
           </h3>
           <p className="account-nft-hint">
-            Contract and RPC are configured — mint from the deployer wallet (see <code className="account-code">blockchain/scripts/mint-badge.js</code>).
+            Contract and RPC are configured. Mint from the deployer wallet (see <code className="account-code">blockchain/scripts/mint-badge.js</code>) — efficient use of chain is batch mint + one URI template per badge type.
           </p>
           <div className="account-nft-wallet-row">
             <input
@@ -202,7 +336,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
                 <li key={b.id} className="account-nft-chain-item">
                   <span className="account-nft-token">#{b.id}</span>
                   <span className="account-nft-uri" title={b.tokenURI}>
-                    {b.tokenURI || '—'}
+                    {b.tokenURI || '…'}
                   </span>
                 </li>
               ))}
@@ -213,8 +347,11 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
         </div>
       ) : (
         <p className="account-nft-muted">
-          Optional: deploy the Finvest badge contract from the <code className="account-code">blockchain/</code> folder,
-          then add RPC + contract env vars to show NFTs here.
+          Local NFT demo: in <code className="account-code">blockchain/</code> run <code className="account-code">npm run badge:auto-local</code> (starts a node, deploys, writes{' '}
+          <code className="account-code">VITE_BADGE_*</code> to <code className="account-code">FRONTEND/.env</code>). Sepolia: set{' '}
+          <code className="account-code">SEPOLIA_RPC_URL</code> + <code className="account-code">DEPLOYER_PRIVATE_KEY</code> in{' '}
+          <code className="account-code">blockchain/.env</code>, then <code className="account-code">npm run deploy:sepolia</code> and{' '}
+          <code className="account-code">node scripts/sync-frontend-env.js sepolia</code>.
         </p>
       )}
     </section>

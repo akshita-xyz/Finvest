@@ -1,0 +1,157 @@
+/* Home: investing story slideshow — black section, white deck card only */
+
+.home-stories {
+  position: relative;
+  z-index: 2;
+  background: #080808;
+  color: #e2e8f0;
+  padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1rem, 3vw, 1.5rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.home-stories__inner {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.home-stories__eyebrow {
+  font-family: var(--M);
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 0.35rem;
+}
+
+.home-stories__title {
+  font-family: var(--D);
+  font-size: clamp(1rem, 2.4vw, 1.2rem);
+  letter-spacing: 0.02em;
+  color: #f1f5f9;
+  margin: 0 0 0.65rem;
+  line-height: 1.2;
+}
+
+.home-stories__stage {
+  position: relative;
+  min-height: clamp(140px, 22vw, 175px);
+}
+
+.home-stories__slide {
+  outline: none;
+}
+
+/* White “deck” card only */
+.home-stories__deck {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: clamp(0.85rem, 2.2vw, 1.1rem) clamp(1rem, 2.5vw, 1.25rem);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.home-stories__slide-title {
+  font-size: clamp(0.82rem, 1.6vw, 0.92rem);
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0 0 0.55rem;
+  line-height: 1.3;
+}
+
+.home-stories__slide-body {
+  font-size: clamp(0.72rem, 1.35vw, 0.8rem);
+  line-height: 1.5;
+  color: #1e293b;
+}
+
+.home-stories__slide-body p {
+  margin: 0 0 0.45rem;
+}
+
+.home-stories__slide-body p:last-child {
+  margin-bottom: 0;
+}
+
+.home-stories__slide-body ul {
+  margin: 0.35rem 0 0.55rem 0.95rem;
+  padding: 0;
+}
+
+.home-stories__slide-body li {
+  margin-bottom: 0.2rem;
+}
+
+.home-stories__slide-body strong {
+  color: #0f172a;
+}
+
+.home-stories__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.home-stories__dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.home-stories__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: #475569;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.home-stories__dot[aria-current='true'] {
+  background: #e2e8f0;
+  transform: scale(1.2);
+}
+
+.home-stories__dot:hover {
+  background: #94a3b8;
+}
+
+.home-stories__arrows {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.home-stories__arrow {
+  font-family: var(--M);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.home-stories__arrow:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.home-stories__arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-stories__dot {
+    transition: none;
+  }
+}

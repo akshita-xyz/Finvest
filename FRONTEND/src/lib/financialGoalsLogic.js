@@ -1,4 +1,4 @@
-/** Pure math for goal planning — deterministic + Monte Carlo probability */
+/** Pure math for goal planning , deterministic + Monte Carlo probability */
 
 export const DEFAULT_INFLATION = 0.05;
 
@@ -65,16 +65,9 @@ export function yearlySeriesDeterministic({ monthlyContrib, lumpSum, meanAnnual,
   for (let y = 1; y <= years; y++) {
     contributed += monthlyContrib * 12;
     const nominal = fvGrowingPortfolio({
-      monthlyContrib,
-      lumpSum,
-      meanAnnual,
-      years: y,
-    });
+      monthlyContrib, lumpSum, meanAnnual, years: y, });
     out.push({
-      year: y,
-      nominal,
-      contributed,
-    });
+      year: y, nominal, contributed, });
   }
   return out;
 }
@@ -89,13 +82,7 @@ export function realFromNominal(nominal, years, inflationAnnual = DEFAULT_INFLAT
  * Probability final wealth > total cash contributed (simple profit probability).
  */
 export function monteCarloProfitProbability({
-  monthlyContrib,
-  lumpSum,
-  years,
-  meanAnnual,
-  volAnnual,
-  simulations = 600,
-}) {
+  monthlyContrib, lumpSum, years, meanAnnual, volAnnual, simulations = 600, }) {
   const months = Math.round(years * 12);
   const dt = 1 / 12;
   const mu = meanAnnual;
@@ -119,29 +106,11 @@ export function monteCarloProfitProbability({
 /** Build three default paths; optional overrides from market data. */
 export function buildRiskPaths({ mfAnnualReturn, mfVol, stockAnnualReturn, stockVol }) {
   const safe = {
-    id: 'safe',
-    label: 'Safe path',
-    subtitle: 'Capital preservation, debt & high-quality bonds',
-    meanAnnual: 0.055,
-    volAnnual: 0.04,
-    allocationHint: '~70% debt / cash-type, ~30% hybrid',
-  };
+    id: 'safe', label: 'Safe path', subtitle: 'Capital preservation, debt & high-quality bonds', meanAnnual: 0.055, volAnnual: 0.04, allocationHint: '~70% debt / cash-type, ~30% hybrid', };
   const moderate = {
-    id: 'moderate',
-    label: 'Moderate path',
-    subtitle: 'Balanced mutual funds + some equity',
-    meanAnnual: Number.isFinite(mfAnnualReturn) ? mfAnnualReturn : 0.085,
-    volAnnual: Number.isFinite(mfVol) ? mfVol : 0.11,
-    allocationHint: '~50–60% equity, rest debt (typical balanced fund)',
-  };
+    id: 'moderate', label: 'Moderate path', subtitle: 'Balanced mutual funds + some equity', meanAnnual: Number.isFinite(mfAnnualReturn) ? mfAnnualReturn : 0.085, volAnnual: Number.isFinite(mfVol) ? mfVol : 0.11, allocationHint: '~50 to 60% equity, rest debt (typical balanced fund)', };
   const aggressive = {
-    id: 'aggressive',
-    label: 'High-growth path',
-    subtitle: 'Global / broad equity (market-linked)',
-    meanAnnual: Number.isFinite(stockAnnualReturn) ? stockAnnualReturn : 0.105,
-    volAnnual: Number.isFinite(stockVol) ? stockVol : 0.18,
-    allocationHint: '~80–95% equity, small cash buffer',
-  };
+    id: 'aggressive', label: 'High-growth path', subtitle: 'Global / broad equity (market-linked)', meanAnnual: Number.isFinite(stockAnnualReturn) ? stockAnnualReturn : 0.105, volAnnual: Number.isFinite(stockVol) ? stockVol : 0.18, allocationHint: '~80 to 95% equity, small cash buffer', };
   // keep sensible bounds
   [safe, moderate, aggressive].forEach((p) => {
     p.meanAnnual = Math.min(0.22, Math.max(0.02, p.meanAnnual));
@@ -162,16 +131,10 @@ export function aggregateWeightedMfStats(entries) {
   if (sumW <= 0) {
     const n = valid.length;
     return {
-      meanAnnual: valid.reduce((acc, e) => acc + e.stats.meanAnnual, 0) / n,
-      volAnnual: valid.reduce((acc, e) => acc + e.stats.volAnnual, 0) / n,
-      days: Math.round(valid.reduce((acc, e) => acc + e.stats.days, 0) / n),
-    };
+      meanAnnual: valid.reduce((acc, e) => acc + e.stats.meanAnnual, 0) / n, volAnnual: valid.reduce((acc, e) => acc + e.stats.volAnnual, 0) / n, days: Math.round(valid.reduce((acc, e) => acc + e.stats.days, 0) / n), };
   }
   return {
-    meanAnnual: valid.reduce((acc, e) => acc + e.stats.meanAnnual * Math.max(0, e.weight), 0) / sumW,
-    volAnnual: valid.reduce((acc, e) => acc + e.stats.volAnnual * Math.max(0, e.weight), 0) / sumW,
-    days: Math.round(
+    meanAnnual: valid.reduce((acc, e) => acc + e.stats.meanAnnual * Math.max(0, e.weight), 0) / sumW, volAnnual: valid.reduce((acc, e) => acc + e.stats.volAnnual * Math.max(0, e.weight), 0) / sumW, days: Math.round(
       valid.reduce((acc, e) => acc + e.stats.days * Math.max(0, e.weight), 0) / sumW
-    ),
-  };
+    ), };
 }

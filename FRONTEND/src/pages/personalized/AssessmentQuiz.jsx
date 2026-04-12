@@ -21,8 +21,7 @@ export default function AssessmentQuiz({ onComplete, onBusyChange }) {
   const notifyBusy = useCallback(
     (v) => {
       onBusyChange?.(v);
-    },
-    [onBusyChange]
+    }, [onBusyChange]
   );
 
   const selectOption = useCallback(
@@ -43,8 +42,7 @@ export default function AssessmentQuiz({ onComplete, onBusyChange }) {
       const result = buildAssessmentResult(nextAnswers, nextHes);
       notifyBusy(true);
       Promise.resolve(onComplete(result)).finally(() => notifyBusy(false));
-    },
-    [step, answers, hesitationMs, onComplete, notifyBusy]
+    }, [step, answers, hesitationMs, onComplete, notifyBusy]
   );
 
   const q = ASSESSMENT_QUESTIONS[step];
@@ -56,7 +54,7 @@ export default function AssessmentQuiz({ onComplete, onBusyChange }) {
       </p>
       <h2 className="pp-card-title">{q.title}</h2>
       <p className="pp-card-desc">{q.description}</p>
-      <p className="pp-hint">We record how long you take on each screen — quick vs deliberate choices inform your investor profile.</p>
+      <p className="pp-hint">We record how long you take on each screen , quick vs deliberate choices inform your investor profile.</p>
       <ul className="pp-options" role="list">
         {q.options.map((opt) => (
           <li key={opt.id}>

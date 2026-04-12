@@ -18,6 +18,12 @@ const yahooChartProxy = {
   },
 }
 
+/** Same-origin in dev so VITE_BACKEND_URL is optional: run `npm start` in BACKEND on 3001. */
+const backendProxy = {
+  '/chat': { target: 'http://127.0.0.1:3001', changeOrigin: true },
+  '/api': { target: 'http://127.0.0.1:3001', changeOrigin: true },
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -29,11 +35,12 @@ export default defineConfig({
     proxy: {
       // Yahoo chart JSON has no browser CORS; dev server proxies so 1D/1Y series work without a backend.
       ...yahooChartProxy,
+      ...backendProxy,
     },
   },
-  // `vite preview` runs production build locally — needs the same proxy as `npm run dev`.
+  // `vite preview` runs production build locally; needs the same proxy as `npm run dev`.
   preview: {
-    proxy: { ...yahooChartProxy },
+    proxy: { ...yahooChartProxy, ...backendProxy },
   },
   resolve: {
     dedupe: ['react', 'react-dom'],

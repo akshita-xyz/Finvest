@@ -117,51 +117,16 @@ async function buildAlphaVantageContext(userMessage) {
     if (lines.length >= 2) break;
     const q = await fetchAlphaVantageGlobalQuote(sym);
     if (q) {
-      lines.push(`${q.symbol}: ~$${q.price} (chg ${q.change}, ${q.changePercent} — Alpha Vantage, delayed)`);
+      lines.push(`${q.symbol}: ~$${q.price} (chg ${q.change}, ${q.changePercent}, Alpha Vantage, delayed)`);
     }
   }
   return lines.length ? lines.join('\n') : '';
 }
 
-/**
- * @param {{ role: string; content: string }[]} messages
- */
-async function callOllama(messages) {
-  const base = String(process.env.OLLAMA_HOST || 'http://127.0.0.1:11434').replace(/\/$/, '');
-  const model = String(process.env.OLLAMA_MODEL || 'llama3.2').trim();
-  if (!model) {
-    return { text: '', error: 'Set OLLAMA_MODEL in BACKEND/.env (e.g. llama3.2).' };
-  }
-  const url = `${base}/api/chat`;
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream: false,
-        options: { temperature: 0.65, num_predict: 1024 },
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      return { text: '', error: `Ollama returned ${res.status}. ${errText.slice(0, 200)}` };
-    }
-    const data = await res.json();
-    const text = String(data?.message?.content ?? '').trim();
-    return { text, error: text ? '' : 'Empty model response from Ollama.' };
-  } catch (e) {
-    const msg = e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e);
-    return {
-      text: '',
-      error: `Could not reach Ollama at ${url}. Run \`ollama serve\` and \`ollama pull ${model}\`. (${msg})`,
-    };
-  }
-}
+const { generateChatReply, resolveProvider } = require('./llmChat');
 
 /**
- * POST /chat — portfolio explainer (see Finvest/BACKEND/script.js for the same contract).
+ * POST /chat: portfolio explainer (see Finvest/BACKEND/script.js for the same contract).
  * Body: { message, userType?, access_token?, history?: { role: 'user'|'model', text }[] }
  */
 app.post('/chat', async (req, res) => {
@@ -188,7 +153,7 @@ app.post('/chat', async (req, res) => {
 
     const systemParts = [
       'You are Finvest “Decode Your Finance Self”: explain investing and portfolio ideas in clear, friendly language (teen-friendly when helpful).',
-      'Do not claim real-time market prices unless given in the conversation. No personalized investment advice as a fiduciary — stay educational.',
+      'Do not claim real-time market prices unless given in the conversation. No personalized investment advice as a fiduciary; stay educational.',
       `Client hint userType: ${userType}.`,
     ];
     if (Object.keys(profileContext).length) {
@@ -215,11 +180,11 @@ app.post('/chat', async (req, res) => {
       messages.push({ role, content: text });
     }
     if (messages.length > 1 && messages[1].role === 'assistant') {
-      messages.splice(1, 0, { role: 'user', content: 'Hi — continuing our Finvest portfolio chat.' });
+      messages.splice(1, 0, { role: 'user', content: 'Hi, continuing our Finvest portfolio chat.' });
     }
     messages.push({ role: 'user', content: message });
 
-    const { text, error } = await callOllama(messages);
+    const { text, error } = await generateChatReply(messages);
     if (error && !text) {
       res.status(503).json({ reply: error });
       return;
@@ -362,7 +327,7 @@ app.get('/api/market/yahoo-chart', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`FINVEST API server running on port ${PORT}`);
+  console.log(`FINVEST API server running on port ${PORT} (chat LLM: ${resolveProvider()})`);
 });
 
 module.exports = app;

@@ -14,7 +14,7 @@ export async function mfSearch(query) {
 }
 
 /**
- * NAV history — { meta, data: [[date, nav], ...] }
+ * NAV history , { meta, data: [[date, nav], ...] }
  */
 export async function mfSchemeHistory(schemeCode) {
   const code = String(schemeCode).trim();
@@ -48,7 +48,7 @@ export async function mfSuggestionsFromQueries(queries, opts = {}) {
         if (merged.length >= maxTotal) return merged;
       }
     } catch {
-      /* rate limit / network — skip query */
+      /* rate limit / network , skip query */
     }
   }
   return merged;
@@ -73,8 +73,5 @@ export function statsFromNavRows(dataRows) {
   const muAnnual = mean * 252;
   const sigmaAnnual = sigmaDaily * Math.sqrt(252);
   return {
-    meanAnnual: Math.min(0.25, Math.max(-0.15, muAnnual)),
-    volAnnual: Math.min(0.5, Math.max(0.05, sigmaAnnual)),
-    days: navs.length,
-  };
+    meanAnnual: Math.min(0.25, Math.max(-0.15, muAnnual)), volAnnual: Math.min(0.5, Math.max(0.05, sigmaAnnual)), days: navs.length, };
 }
