@@ -82,6 +82,8 @@
   color: var(--white, #fafaf8);
   font-size: 1rem;
   margin-bottom: 0.25rem;
+  cursor: text;
+  caret-color: var(--accent, #c8ff00);
 }
 
 .auth-input:focus {

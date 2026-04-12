@@ -3,7 +3,6 @@ import Cursor from '../components/Cursor'
 import Intro from '../components/Intro'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
-import MarqueeTracker from '../components/MarqueeTracker'
 import Marquee from '../components/Marquee'
 import WhatWeDo from '../components/WhatWeDo'
 import Stats from '../components/Stats'
@@ -54,13 +53,6 @@ function LandingPage() {
             { id: "mq-marquee-mid", speed: 0.55 },
           ],
         },
-        {
-          container: "#mq-wrapper",
-          layers: [
-            { id: "mq-layer-far", speed: 0.25 },
-            { id: "mq-layer-mid", speed: 0.55 },
-          ]
-        }
       ];
 
       parallaxSections.forEach((section) => {
@@ -99,6 +91,14 @@ function LandingPage() {
     
     return () => window.removeEventListener("scroll", scrollListener);
   }, []);
+
+  useEffect(() => {
+    if (!introComplete) return;
+    const rid = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    return () => cancelAnimationFrame(rid);
+  }, [introComplete]);
 
   useEffect(() => {
     if (!introComplete) return;
@@ -158,10 +158,13 @@ function LandingPage() {
         <Intro onComplete={handleIntroDone} />
       )}
 
-      <div id="site" className={introComplete ? "show" : ""} style={introComplete ? { display: 'block' } : { display: 'none' }}>
+      <div
+        id="site"
+        className={introComplete ? 'show' : ''}
+        style={introComplete ? { display: 'block' } : { display: 'none' }}
+      >
         <Navbar />
-        <MarqueeTracker />
-        <Hero onOpenModal={setActiveModal} />
+        <Hero />
         <Marquee />
         <WhatWeDo />
         <Stats />

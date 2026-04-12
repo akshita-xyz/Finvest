@@ -35,6 +35,37 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl?.trim() && supabaseAnonKey?.trim()
 );
 
+/** @param {string} jwt */
+function decodeJwtPayloadUnsafe(jwt) {
+  try {
+    const mid = jwt.split('.')[1];
+    if (!mid) return null;
+    let b64 = mid.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(atob(b64));
+  } catch {
+    return null;
+  }
+}
+
+if (import.meta.env.DEV && isSupabaseConfigured && supabaseUrl && supabaseAnonKey?.startsWith('eyJ')) {
+  const host = (() => {
+    try {
+      return new URL(supabaseUrl).hostname.replace(/\.supabase\.co$/i, '');
+    } catch {
+      return '';
+    }
+  })();
+  const payload = decodeJwtPayloadUnsafe(supabaseAnonKey);
+  const ref = typeof payload?.ref === 'string' ? payload.ref : '';
+  if (host && ref && ref !== host) {
+    console.warn(
+      `[supabaseClient] VITE_SUPABASE_URL host "${host}" does not match anon JWT ref "${ref}". ` +
+        'Copy both values from the same Supabase project (Settings → API), then restart the dev server.'
+    );
+  }
+}
+
 if (!isSupabaseConfigured) {
   console.warn(
     '[supabaseClient] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. ' +
