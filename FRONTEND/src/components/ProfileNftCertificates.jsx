@@ -345,15 +345,7 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
             <p className="account-nft-muted">No badge tokens found for this address.</p>
           ) : null}
         </div>
-      ) : (
-        <p className="account-nft-muted">
-          Local NFT demo: in <code className="account-code">blockchain/</code> run <code className="account-code">npm run badge:auto-local</code> (starts a node, deploys, writes{' '}
-          <code className="account-code">VITE_BADGE_*</code> to <code className="account-code">FRONTEND/.env</code>). Sepolia: set{' '}
-          <code className="account-code">SEPOLIA_RPC_URL</code> + <code className="account-code">DEPLOYER_PRIVATE_KEY</code> in{' '}
-          <code className="account-code">blockchain/.env</code>, then <code className="account-code">npm run deploy:sepolia</code> and{' '}
-          <code className="account-code">node scripts/sync-frontend-env.js sepolia</code>.
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

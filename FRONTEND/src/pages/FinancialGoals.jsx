@@ -86,7 +86,8 @@ const PATH_EXPLAIN = {
         <ExplainSection title="Why we show it">
           <p>
             To stress-test ambition: more growth potential, but wider swings in the Monte Carlo view. With an equity
-            symbol and Alpha Vantage data, we calibrate from that; otherwise we use a default equity-style profile.
+            symbol and enough historical price data, we calibrate from that; otherwise we use a default equity-style
+            profile.
           </p>
         </ExplainSection>
         <ExplainSection title="How the number is built">
@@ -494,10 +495,6 @@ function SuggestedSchemesPanel({ schemes, onAddFromSuggestion }) {
   return (
     <div className="fg-suggestions">
       <h3>Suggested schemes to explore (from your goals + AI)</h3>
-      <p className="fg-hint">
-        Pulled via mfapi.in search. Labels are heuristic (name + search phrase). Educational only , verify before
-        investing.
-      </p>
 
       <div className="fg-suggest-filters">
         <div className="fg-suggest-filter-group">
@@ -746,26 +743,8 @@ function FinancialGoals() {
           return { ...s, horizon, risk };
         });
 
-      const mfNote =
-        holdingsLinked.length === 0
-          ? 'No schemes linked , moderate path uses default balanced-fund assumptions. Add schemes anytime to calibrate from NAV history.'
-          : mfStats
-            ? `Moderate path weighted by your linked scheme(s) and optional ₹ amounts (${mfBreakdown
-                .filter((b) => b.stats)
-                .map((b) => b.schemeName)
-                .join(', ') || 'NAV data'}).`
-            : 'Linked schemes did not return enough NAV history , using defaults for the moderate path.';
-
-      const dataNote = !alphaKey
-        ? 'Add VITE_ALPHA_VANTAGE_API_KEY and an equity symbol to calibrate the high-growth path from Alpha Vantage.'
-        : !sym
-          ? 'No equity symbol , high-growth path uses default equity assumptions.'
-          : stockStats
-            ? `Equity stats from ~${stockStats.points} trading days (${sym}).`
-            : 'Equity stats fell back to defaults (API limit or symbol issue).';
-
       setResult({
-        paths: enriched, chartData, monthlyContrib: monthly, years, mfStats, mfBreakdown, stockStats, dataNote, mfNote, targetLine, totalTargets, snapshotGoals: enabledGoals.map((g) => ({
+        paths: enriched, chartData, monthlyContrib: monthly, years, mfStats, mfBreakdown, stockStats, targetLine, totalTargets, snapshotGoals: enabledGoals.map((g) => ({
           id: g.id, label: g.isCustom ? String(g.label || '').trim() || 'Custom goal' : g.label, targetAmount: Number(g.targetAmount) || 0, years: Math.max(1, Number(g.years) || 1), isCustom: !!g.isCustom, })), startingCorpus: Math.max(0, Number(startingCorpus) || 0), suggestedSchemes, equitySymbolUsed: sym || null, });
 
       if (geminiKey) {
@@ -835,22 +814,6 @@ Keep total under 220 words. No bullet lists.`;
       </header>
 
       <main className="fg-main">
-        {(!alphaKey || !geminiKey) && (
-          <div className="fg-banner">
-            <strong>API keys:</strong> Add <code>VITE_ALPHA_VANTAGE_API_KEY</code> and{' '}
-            <code>VITE_GEMINI_API_KEY</code> in <code>FRONTEND/.env</code> (see <code>.env.example</code>). Mutual fund
-            data uses{' '}
-            <a href="https://api.mfapi.in" target="_blank" rel="noreferrer">
-              mfapi.in
-            </a>{' '}
-            with no key. Stock analytics follow{' '}
-            <a href="https://www.alphavantage.co/" target="_blank" rel="noreferrer">
-              Alpha Vantage
-            </a>
-            .
-          </div>
-        )}
-
         <div className="fg-grid">
           <MotionSection className="fg-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <h2>
@@ -967,7 +930,7 @@ Keep total under 220 words. No bullet lists.`;
               volatility. Leave blank and we still build the three paths with sensible defaults. After you generate, we suggest more schemes you can add with one click.
             </p>
             <div className="fg-field">
-              <label>Equity symbol (Alpha Vantage)</label>
+              <label>Equity symbol</label>
               <input
                 value={stockSymbol}
                 onChange={(e) => setStockSymbol(e.target.value.toUpperCase())}
@@ -1029,18 +992,9 @@ Keep total under 220 words. No bullet lists.`;
                         you that all of it is modeled, not predicted.
                       </p>
                     </ExplainSection>
-                    <ExplainSection title="The grey lines above the cards">
-                      <p>
-                        Those short sentences report <strong>what data we actually used</strong>: Alpha Vantage for your
-                        equity symbol when present, NAV history from mfapi.in for linked mutual funds, or built-in
-                        defaults when something is missing or rate-limited. They are transparency notes, not advice.
-                      </p>
-                    </ExplainSection>
                   </>
                 </FgExplainIcon>
               </div>
-              <p className="fg-meta fg-meta-tight">{result.dataNote}</p>
-              <p className="fg-meta fg-meta-tight">{result.mfNote}</p>
               <p className="fg-paths-sip-line">
                 <FgExplainLink
                   text="Monthly SIP (calculation)"
@@ -1456,9 +1410,6 @@ Keep total under 220 words. No bullet lists.`;
                   </p>
                 )}
                 {aiNarrative && <div className="fg-ai-text">{aiNarrative}</div>}
-                {!geminiKey && (
-                  <p className="fg-hint">Set VITE_GEMINI_API_KEY to unlock AI storytelling for your numbers.</p>
-                )}
               </section>
             )}
           </>
