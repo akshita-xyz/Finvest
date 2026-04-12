@@ -1,6 +1,8 @@
 import React, { useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+
+const MotionSection = motion.section;
 import {
   ArrowLeft,
   ClipboardList,
@@ -1005,7 +1007,7 @@ Keep total under 220 words. No bullet lists.`;
         )}
 
         <div className="fg-grid">
-          <motion.section className="fg-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <MotionSection className="fg-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <h2>
               <ClipboardList size={22} /> Your situation
             </h2>
@@ -1104,9 +1106,9 @@ Keep total under 220 words. No bullet lists.`;
             <button type="button" className="fg-add-row" onClick={addCustomGoal}>
               <Plus size={18} /> Add custom goal
             </button>
-          </motion.section>
+          </MotionSection>
 
-          <motion.section
+          <MotionSection
             className="fg-card"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1155,7 +1157,7 @@ Keep total under 220 words. No bullet lists.`;
               )}
             </button>
             {error && <p className="fg-error">{error}</p>}
-          </motion.section>
+          </MotionSection>
         </div>
 
         {result && (

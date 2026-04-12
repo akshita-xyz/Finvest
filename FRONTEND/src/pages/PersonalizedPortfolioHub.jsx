@@ -105,7 +105,7 @@ export default function PersonalizedPortfolioHub() {
       if (next === 'quiz' && next !== current) setQuizKey((k) => k + 1);
       setSearchParams({ tab: next });
     },
-    [user?.id, profile, tabParam, setSearchParams]
+    [user, profile, tabParam, setSearchParams]
   );
 
   const saveFearScore = async () => {
