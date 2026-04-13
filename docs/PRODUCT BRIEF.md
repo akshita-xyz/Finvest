@@ -29,24 +29,6 @@ Many first-time investors **under-save or avoid markets** because downside feels
 
 Exact scoring for quizzes is specified in [`QUIZ_CALCULATIONS.md`](QUIZ_CALCULATIONS.md).
 
-## Suggested team split (four people)
-
-| Focus | Owns |
-|-------|------|
-| **Frontend** | Pages, layout, accessibility, chart UX, API calls to same-origin `/api/*` |
-| **Backend / data** | Supabase schema, RLS, Express routes if used, env hygiene |
-| **ML & product logic** | Fear score, clustering, Monte Carlo parameters, copy that matches math |
-| **Integration** | Vercel env, end-to-end demo path, README accuracy |
-
-## Algorithms (summary)
-
-- **Fear score** — Starts from a baseline; answer deltas and hesitation statistics adjust it, then clamp to 1–100.
-- **Clusters** — Nearest-centroid in a normalized feature space (fear, patience, impulse, planning).
-- **Allocation bands** — Discrete stock/bond/cash mixes keyed off fear score ranges.
-- **Monte Carlo** — Many simulated paths → percentiles and loss-relevant summaries for visualization.
-
-Details differ per module; source of truth is code in `FRONTEND/src/lib/` and `ML/`.
-
 ## Commands
 
 ```bash
@@ -61,13 +43,3 @@ cd BACKEND && npm install && npm start
 # Production build (from frontend)
 cd FRONTEND && npm run build
 ```
-
-## Demo narrative (short)
-
-Landing → onboarding / quiz → reveal fear score + profile → portfolio / simulation views → (optional) chat when keys are set. Keep one **happy path** rehearsed end-to-end.
-
-## Pitfalls
-
-- **CORS** — Prefer same-origin `FRONTEND/api` on Vercel over a separate origin unless `BACKEND` is explicitly configured.
-- **Secrets** — LLM and Supabase service keys belong in server/env or Vercel project settings, not `VITE_*` (except public Supabase anon key).
-- **404 on `/api/chat`** — Fix deploy root and presence of `api/` in the built project (see root `README.md`).
