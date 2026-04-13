@@ -37,17 +37,7 @@ The product is **educational**, not personalized financial advice.
 - npm (comes with Node)
 - A [Supabase](https://supabase.com/) project (URL + anon key) for auth and profiles
 
-### 2. Environment variables
-
-Copy the example file and edit **before** starting the dev server:
-
-```bash
-cp FRONTEND/.env.example FRONTEND/.env
-```
-
-See **[`.env.example`](.env.example)** (repo root index) and **[`FRONTEND/.env.example`](FRONTEND/.env.example)** for every variable. Never commit real keys.
-
-### 3. Frontend (main app)
+### 2. Frontend (main app)
 
 ```bash
 cd FRONTEND
@@ -65,14 +55,7 @@ npm run preview    # serve dist locally
 npm run lint       # ESLint
 ```
 
-### 4. Database migrations (Supabase)
-
-Apply SQL in order in the Supabase SQL editor (or CLI) for your project:
-
-1. [`supabase/sql/001_user_profiles.sql`](supabase/sql/001_user_profiles.sql)
-2. [`supabase/sql/002_user_profiles_avatar_url.sql`](supabase/sql/002_user_profiles_avatar_url.sql)
-
-### 5. Optional: Express backend
+### 3. Optional: backend
 
 ```bash
 cd BACKEND
@@ -81,15 +64,7 @@ npm install
 npm start
 ```
 
-Default port is in `BACKEND/.env.example` (e.g. `3001`). Use this only if you integrate against the Express server; many features use the frontend + Supabase + Vercel serverless only.
-
-### 6. Optional: blockchain / badge NFTs
-
-```bash
-cd blockchain
-npm install
-# See blockchain/.env.example and package.json scripts (e.g. badge:auto-local)
-```
+Default port is in `BACKEND/.env.example` (e.g. `3001`). 
 
 ## APIs and external services
 
@@ -111,13 +86,3 @@ Chat provider selection: `LLM_PROVIDER=auto|groq|gemini` — with `auto`, Groq i
 - If **Root Directory** is the **repository root**, use root `vercel.json` and `api/*.js` (e.g. `api/chat.js` re-exports the frontend handler). Root [`package.json`](package.json) sets `"type": "module"` for ESM.
 
 Set the same environment variables in the Vercel project (especially `GROQ_API_KEY` without `VITE_` for serverless).
-
-## Further documentation
-
-- [`docs/QUIZ_CALCULATIONS.md`](docs/QUIZ_CALCULATIONS.md) — quiz and scoring reference
-- [`docs/HACKATHON_PROMPT.md`](docs/HACKATHON_PROMPT.md) — product brief and team split
-- [`FRONTEND/README.md`](FRONTEND/README.md) — frontend-focused notes
-
-## License
-
-ISC
