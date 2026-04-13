@@ -2,73 +2,120 @@
 
 **Feel the risk, master the outcome.**
 
-FINVEST is a web app for young investors who hesitate because of **loss aversion** and unclear risk. The product combines **experiential learning** (simulations and scenarios), **behavioral scoring** (quizzes with timing signals), and **personalized allocation** so users rehearse outcomes before committing real capital.
+## Project overview
 
-## Theory (why this exists)
+FINVEST is an investment learning platform for users who hesitate because of **loss aversion** and unclear risk. It combines:
 
-- **Loss aversion** (Kahneman & Tversky): losses feel roughly twice as painful as equivalent gains feel good—so fear of drawdowns blocks participation.
-- **Mental accounting & framing**: showing volatility and “what if” paths in a safe environment reframes risk from a vague threat into something measurable.
-- **Behavioral measurement**: response time and answer patterns proxy for patience, impulsivity, and planning—traits that map to portfolio suitability more usefully than a single risk checkbox.
+- **Experiential learning** — risk sandbox, scenarios, and charts so users rehearse outcomes before committing real capital.
+- **Behavioral scoring** — quizzes (including response timing) that feed fear scores, investor clusters, and suggested allocations.
+- **Profiles & auth** — Supabase-backed accounts and `user_profiles` for dashboard preferences and certificates.
+- **Optional AI chat** — serverless `POST /api/chat` using Groq and/or Google Gemini, with optional profile context.
+- **Optional on-chain badges** — NFT contracts and deploy scripts under `blockchain/` (local or testnet).
 
-## What’s in the repo
+The product is **educational**, not personalized financial advice.
 
-| Area | Role |
-|------|------|
-| `FRONTEND/` | React (Vite), dashboard, onboarding, ML-driven UI, serverless `api/` for chat and market proxies |
-| `BACKEND/` | Optional Express API + Supabase (local or legacy integration) |
-| `ML/` | JS modules: behavior, clustering, portfolio logic, simulation |
-| `supabase/sql/` | PostgreSQL migrations for profiles |
-| `api/` (repo root) | ESM re-exports for Vercel when **Root Directory** is the repository root |
+## Tech stack
 
-## Commands
+| Layer | Technologies |
+|--------|----------------|
+| **Frontend** | React 19, Vite 8, React Router, Tailwind CSS 4, Framer Motion, Lucide icons |
+| **Charts** | Recharts, TradingView Lightweight Charts |
+| **Auth & database** | Supabase (PostgreSQL, Row Level Security, Auth) |
+| **Serverless (Vercel / Vite dev)** | Node handlers in `FRONTEND/api/` (chat, Yahoo chart proxy); root `api/` re-exports for repo-root deploy |
+| **Optional backend** | Node.js, Express 5 (`BACKEND/`) |
+| **ML / logic** | JavaScript modules in `ML/` and `FRONTEND/src/lib/` (Monte Carlo, clustering, quiz engines) |
+| **Blockchain (optional)** | Hardhat, ethers.js (`blockchain/`) |
 
-### Frontend (primary app)
+**Runtime:** Node `>=20.19.0 <25` for the frontend toolchain (see `FRONTEND/package.json` `engines`).
+
+## Setup — run locally
+
+### 1. Prerequisites
+
+- [Node.js](https://nodejs.org/) (LTS, matching `FRONTEND` engines)
+- npm (comes with Node)
+- A [Supabase](https://supabase.com/) project (URL + anon key) for auth and profiles
+
+### 2. Environment variables
+
+Copy the example file and edit **before** starting the dev server:
+
+```bash
+cp FRONTEND/.env.example FRONTEND/.env
+```
+
+See **[`.env.example`](.env.example)** (repo root index) and **[`FRONTEND/.env.example`](FRONTEND/.env.example)** for every variable. Never commit real keys.
+
+### 3. Frontend (main app)
 
 ```bash
 cd FRONTEND
 npm install
-cp .env.example .env   # then edit; never commit real secrets
 npm run dev
 ```
 
+Open the URL Vite prints (usually `http://localhost:5173`).
+
+Other useful commands:
+
 ```bash
-npm run build
-npm run preview
-npm run lint
+npm run build      # production build → dist/
+npm run preview    # serve dist locally
+npm run lint       # ESLint
 ```
 
-### Backend (optional)
+### 4. Database migrations (Supabase)
+
+Apply SQL in order in the Supabase SQL editor (or CLI) for your project:
+
+1. [`supabase/sql/001_user_profiles.sql`](supabase/sql/001_user_profiles.sql)
+2. [`supabase/sql/002_user_profiles_avatar_url.sql`](supabase/sql/002_user_profiles_avatar_url.sql)
+
+### 5. Optional: Express backend
 
 ```bash
 cd BACKEND
+cp .env.example .env   # set SUPABASE_URL, SUPABASE_ANON_KEY, PORT, etc.
 npm install
-# BACKEND/.env: SUPABASE_URL, SUPABASE_ANON_KEY (Supabase Dashboard → Project Settings → API)
 npm start
 ```
 
-### Supabase SQL (local reference)
+Default port is in `BACKEND/.env.example` (e.g. `3001`). Use this only if you integrate against the Express server; many features use the frontend + Supabase + Vercel serverless only.
 
-Apply migrations in order using the Supabase SQL editor or CLI against your project: `supabase/sql/001_user_profiles.sql`, then `002_user_profiles_avatar_url.sql`.
+### 6. Optional: blockchain / badge NFTs
 
-## Environment essentials
+```bash
+cd blockchain
+npm install
+# See blockchain/.env.example and package.json scripts (e.g. badge:auto-local)
+```
 
-- **Browser / Vite**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `FRONTEND/.env` (see `FRONTEND/.env.example`).
-- **Chat (`POST /api/chat`)**: server-side `GROQ_API_KEY` and/or Gemini keys; `LLM_PROVIDER=auto|groq|gemini` (auto prefers Groq when `GROQ_API_KEY` is set). Do not put secret keys in `VITE_*`.
-- **Market data**: optional `VITE_FINNHUB_API_KEY` / `VITE_ALPHA_VANTAGE_API_KEY` for quotes and news.
+## APIs and external services
 
-## Vercel: avoid 404 on `/api/chat`
+| Service | Purpose | Where configured |
+|--------|---------|------------------|
+| **Supabase** | Auth, PostgreSQL, realtime-capable client | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `FRONTEND/.env`; optional `SUPABASE_*` for server code |
+| **Groq** | LLM chat (OpenAI-compatible API) | `GROQ_API_KEY` (server only, in `FRONTEND/.env` for local API routes or Vercel env) |
+| **Google Gemini** | LLM chat alternative | `GEMINI_API_KEY` / `GOOGLE_AI_API_KEY` or `VITE_GEMINI_API_KEY` (see `FRONTEND/api/_lib/llmChat.js`) |
+| **Alpha Vantage** | Delayed quotes / ticker hints (dashboard + optional chat context) | `VITE_ALPHA_VANTAGE_API_KEY`, optional `ALPHA_VANTAGE_KEY` server-side |
+| **Finnhub** | Quotes, news, symbol search (preferred when set) | `VITE_FINNHUB_API_KEY` or `FINNHUB_API_KEY` |
+| **Yahoo Finance** | OHLC/candle data for charts | Proxied via `FRONTEND/api/market/yahoo-chart.js` and dev proxy in `vite.config.js` (no API key; subject to Yahoo/network limits) |
+| **EVM RPC + contract** | Optional NFT badges | `VITE_NFT_RPC_URL`, `VITE_BADGE_NFT_CONTRACT_ADDRESS` |
 
-Serverless routes must be part of the deployment that Vercel builds:
+Chat provider selection: `LLM_PROVIDER=auto|groq|gemini` — with `auto`, Groq is preferred when `GROQ_API_KEY` is set.
 
-- **Root Directory = `FRONTEND`**: uses `FRONTEND/vercel.json` and `FRONTEND/api/*`.
-- **Root Directory = repo root**: Vercel uses root `vercel.json` and `api/*.js` (root `api/chat.js` re-exports the frontend handler). Root `package.json` uses `"type": "module"` for ESM.
+## Deploy notes (Vercel)
 
-Set the same env vars in the Vercel project; a 404 is usually routing/layout, not a missing API key.
+- If **Root Directory** is **`FRONTEND`**, Vercel uses `FRONTEND/vercel.json` and `FRONTEND/api/*`.
+- If **Root Directory** is the **repository root**, use root `vercel.json` and `api/*.js` (e.g. `api/chat.js` re-exports the frontend handler). Root [`package.json`](package.json) sets `"type": "module"` for ESM.
 
-## Documentation
+Set the same environment variables in the Vercel project (especially `GROQ_API_KEY` without `VITE_` for serverless).
 
-- [`docs/QUIZ_CALCULATIONS.md`](docs/QUIZ_CALCULATIONS.md) — exact quiz and pillar math.
-- [`docs/HACKATHON_PROMPT.md`](docs/HACKATHON_PROMPT.md) — brief product spec and team split.
+## Further documentation
+
+- [`docs/QUIZ_CALCULATIONS.md`](docs/QUIZ_CALCULATIONS.md) — quiz and scoring reference
+- [`docs/HACKATHON_PROMPT.md`](docs/HACKATHON_PROMPT.md) — product brief and team split
+- [`FRONTEND/README.md`](FRONTEND/README.md) — frontend-focused notes
 
 ## License
 
