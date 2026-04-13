@@ -4,7 +4,12 @@
  */
 
 function geminiApiKey() {
-  return String(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '').trim();
+  return String(
+    process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_AI_API_KEY ||
+      process.env.VITE_GEMINI_API_KEY ||
+      ''
+  ).trim();
 }
 
 function geminiModelId() {

@@ -1,5 +1,5 @@
 /**
- * Vercel Serverless: POST /api/chat — same contract as BACKEND POST /chat.
+ * Vercel Serverless + Vite dev middleware: POST /api/chat
  * Body: { message, userType?, access_token?, history?: { role: 'user'|'model'|'ai', text }[] }
  */
 import { generateChatReply } from './_lib/llmChat.js';
@@ -14,6 +14,13 @@ import {
  * @returns {Promise<Record<string, unknown>>}
  */
 async function readJsonBody(req) {
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      return JSON.parse(req.body.toString('utf8'));
+    } catch {
+      return {};
+    }
+  }
   if (req.body != null && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
     return /** @type {Record<string, unknown>} */ (req.body);
   }

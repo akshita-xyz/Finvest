@@ -16,6 +16,7 @@ import {
   getAlphaVantageKey,
   searchSymbols,
 } from '../lib/marketDataHub';
+import { apiUrl } from '../lib/appBaseUrl';
 import RiskCandlestickChart from '../components/RiskCandlestickChart';
 import { EMOTION_QUESTIONS, evaluateEmotionMindset } from '../lib/emotionInvestingMindset';
 import { CertificateModal, FinvestCertificate } from '../components/FinvestCertificate';
@@ -36,8 +37,8 @@ function readNavSectionFromHash() {
   return 'risk-sandbox';
 }
 
-/** Chat: same-origin `POST /api/chat` (Vercel serverless). In local `npm run dev`, Vite can proxy `/api/*` to BACKEND:3001 — or run `vercel dev` for the real serverless route. */
-const CHAT_URL = '/api/chat';
+/** Same-origin `POST /api/chat`: Vercel serverless in prod; local `npm run dev` runs it via vite-plugins/finvestLocalApi.js (no BACKEND). */
+const CHAT_URL = apiUrl('/api/chat');
 
 function displayNameForAi(user) {
   if (!user) return '';
@@ -540,7 +541,7 @@ function Dashboard() {
         const reply =
           typeof data?.reply === 'string'
             ? data.reply
-            : `Chat server returned HTTP ${res.status}. Set GROQ_API_KEY or GEMINI_API_KEY (and SUPABASE_*) in the Vercel project, or run BACKEND locally with Vite proxying /api.`;
+            : `Chat server returned HTTP ${res.status}. Add GROQ_API_KEY or GEMINI_API_KEY (and SUPABASE_URL / SUPABASE_ANON_KEY for profile) to FRONTEND/.env and restart Vite, or set them on Vercel for production.`;
         setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
         return;
       }
@@ -552,7 +553,7 @@ function Dashboard() {
         {
           role: 'ai',
           text:
-            'Could not reach the Finvest AI chat API (`POST /api/chat`). On Vercel, set GROQ_API_KEY or GEMINI_API_KEY in project env. Locally: run `vercel dev` in FRONTEND, or `npm start` in BACKEND with Vite proxying `/api` to port 3001.',
+            'Could not reach POST /api/chat. For local dev: add GROQ_API_KEY (or GEMINI_API_KEY) to FRONTEND/.env and restart `npm run dev`. Production: set the same env vars on Vercel (serverless).',
         },
       ]);
     } finally {

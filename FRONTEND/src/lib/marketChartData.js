@@ -3,6 +3,8 @@
  * Historical OHLC for charts is loaded via Yahoo chart JSON when candles fail.
  */
 
+import { apiUrl } from './appBaseUrl';
+
 function sanitizeSymbol(symbol) {
   return String(symbol || '')
     .trim()
@@ -28,16 +30,16 @@ function buildYahooChartUrls(symbol, range, interval) {
   const path = `/v8/finance/chart/${encodeURIComponent(sym)}?range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
   const qs = `symbol=${encodeURIComponent(sym)}&range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
   const urls = [];
-  // Dev: fast local Yahoo proxy. Production: same-origin Vercel serverless at api/market/yahoo-chart.js
+  const backend = import.meta.env.VITE_BACKEND_URL;
+  if (backend) {
+    const base = String(backend).replace(/\/$/, '');
+    urls.push(`${base}/api/market/yahoo-chart?${qs}`);
+  }
+  // Dev: prefer direct Yahoo proxy (fast). Then same-origin /api (Vite → BACKEND if running).
   if (import.meta.env.DEV) {
     urls.push(`/__yahoo${path}`);
   }
-  urls.push(`/api/market/yahoo-chart?${qs}`);
-  const legacyBackend = import.meta.env.VITE_BACKEND_URL;
-  if (legacyBackend) {
-    const base = String(legacyBackend).replace(/\/$/, '');
-    urls.push(`${base}/api/market/yahoo-chart?${qs}`);
-  }
+  urls.push(`${apiUrl('/api/market/yahoo-chart')}?${qs}`);
   return urls;
 }
 

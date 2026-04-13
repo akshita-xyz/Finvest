@@ -7,9 +7,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
   fetchUserProfile, mergeDashboardPrefs, updateUserProfileFields, classificationFromFearScore, } from '../services/userProfileService';
+import { allocationFromFearScore } from '../lib/personalizedPortfolioEngine';
 import {
   getFirstIncompletePPTab, getPPRoadmapCompletion, } from '../lib/personalizedPortfolioRoadmap';
-import { listAvailableScenarios } from '../lib/ml';
 import AssessmentQuiz from './personalized/AssessmentQuiz';
 import { CertificateModal, FinvestCertificate } from '../components/FinvestCertificate';
 import '../styles/pp-hub.css';
@@ -41,9 +41,6 @@ export default function PersonalizedPortfolioHub() {
   const assessment = profile?.dashboard_prefs?.assessment;
 
   const roadmapDone = useMemo(() => getPPRoadmapCompletion(profile), [profile]);
-
-  /** Ex-BACKEND ML `GET /api/scenarios` — bundled for client-side use (`analyzeUserPayload`, etc.). */
-  const stressScenarioCount = useMemo(() => listAvailableScenarios().length, []);
 
   useEffect(() => {
     document.body.classList.add('dashboard-mode');
@@ -194,10 +191,6 @@ export default function PersonalizedPortfolioHub() {
               Use the roadmap on the left: calibrate fear score manually, take the personality quiz (we time each
               answer), then review where you might fit , trading vs long-term vs loans , and your generated portfolio
               mix.
-            </p>
-            <p className="pp-muted" style={{ marginTop: 12 }}>
-              Simulation toolkit (client-side, educational): {stressScenarioCount} historical stress scenarios available
-              for exploration alongside your profile.
             </p>
             {assessment?.completedAt ? (
               <p className="pp-muted">

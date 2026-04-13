@@ -1,7 +1,8 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { finvestLocalApi } from './vite-plugins/finvestLocalApi.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -18,43 +19,33 @@ const yahooChartProxy = {
   },
 }
 
-/**
- * Optional local fallback: proxy `/api` to BACKEND:3001. Express uses `/chat` (not `/api/chat`) — rewrite only that path.
- * For chat without BACKEND, use `vercel dev` in FRONTEND (runs `/api/chat` serverless locally).
- */
-const backendProxy = {
-  '/api': {
-    target: 'http://127.0.0.1:3001',
-    changeOrigin: true,
-    rewrite: (path) =>
-      path.startsWith('/api/chat') ? '/chat' + path.slice('/api/chat'.length) : path,
-  },
-}
-
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/',
-  // Expose legacy non-VITE env names used elsewhere in this repo so hosted and local auth
-  // still work even when Supabase/Finnhub vars were entered under the backend-style names.
-  envPrefix: ['VITE_', 'FINNHUB_', 'SUPABASE_'],
-  plugins: [react()],
-  server: {
-    proxy: {
-      // Yahoo chart JSON has no browser CORS; dev server proxies so 1D/1Y series work without a backend.
-      ...yahooChartProxy,
-      ...backendProxy,
+export default defineConfig(({ mode }) => {
+  const loaded = loadEnv(mode, __dirname, '')
+  for (const k of Object.keys(loaded)) {
+    if (process.env[k] === undefined) process.env[k] = loaded[k]
+  }
+
+  return {
+    base: '/',
+    // Expose legacy non-VITE env names used elsewhere in this repo so hosted and local auth
+    // still work even when Supabase/Finnhub vars were entered under the backend-style names.
+    envPrefix: ['VITE_', 'FINNHUB_', 'SUPABASE_'],
+    // finvestLocalApi runs POST /api/chat + GET /api/market/* inside Vite (no BACKEND). Must run before react().
+    plugins: [finvestLocalApi(), react()],
+    server: {
+      proxy: {
+        ...yahooChartProxy,
+      },
     },
-  },
-  // `vite preview` runs production build locally; needs the same proxy as `npm run dev`.
-  preview: {
-    proxy: { ...yahooChartProxy, ...backendProxy },
-  },
-  resolve: {
-    dedupe: ['react', 'react-dom'],
-    // Rolldown/Vite 8 can fail to resolve tslib from @supabase/* when hoisting is odd; vendor copy keeps builds reliable.
-    alias: {
-      tslib: path.resolve(__dirname, 'vendor/tslib/tslib.es6.mjs'),
-      '@ml': path.resolve(__dirname, '../ML'),
+    preview: {
+      proxy: { ...yahooChartProxy },
     },
-  },
+    resolve: {
+      dedupe: ['react', 'react-dom'],
+      alias: {
+        tslib: path.resolve(__dirname, 'vendor/tslib/tslib.es6.mjs'),
+      },
+    },
+  }
 })
