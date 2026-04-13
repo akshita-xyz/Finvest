@@ -1,7 +1,7 @@
 # FINVEST
 
-**Feel the risk, master the outcome.** 
-https://finvest-team-bandwagons.vercel.app/
+**Feel the risk, master the outcome.** <br>
+live at- https://finvest-team-bandwagons.vercel.app/
 
 ## Project overview
 
