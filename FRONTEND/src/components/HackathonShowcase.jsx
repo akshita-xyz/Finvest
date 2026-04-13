@@ -152,7 +152,7 @@ const HackathonShowcase = () => {
         <div className="sw">
           <p className="hack-sl rv">Why us</p>
           <h2 id="why-us-h" className="hack-h2 rv" style={{ transitionDelay: '0.06s' }}>
-            Why judges , and users , should care
+            Why judges , and users should care
           </h2>
           <ul className="hack-sell-grid rv" style={{ transitionDelay: '0.1s' }}>
             {sellingPoints.map((x) => (
