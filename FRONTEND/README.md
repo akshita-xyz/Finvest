@@ -1,16 +1,46 @@
-# React + Vite
+# FINVEST frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite 8 + Tailwind CSS 4. The app is the main surface for onboarding, dashboard, risk sandbox, charts (Lightweight Charts + Recharts), and Supabase-backed auth/profile.
 
-Currently, two official plugins are available:
+## Theory (UI layer)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The UI is built around **transparent feedback**: simulations and quizzes turn abstract “risk” into scores, bands, and allocations users can revisit. Charts and copy are labeled **educational**, not financial advice—appropriate for a learning product.
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+cd FRONTEND
+npm install
+cp .env.example .env
+```
 
-## Expanding the ESLint configuration
+Edit `.env`: Supabase URL/key, optional market keys, and (for local chat) `GROQ_API_KEY` / Gemini keys as described in `.env.example`. Restart `npm run dev` after env changes—Vite reads env at startup.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Node:** `>=20.19.0 <25` (see `package.json` `engines`).
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Vite dev server (includes dev proxy for Yahoo chart path—see `vite.config.js`) |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve `dist/` locally |
+| `npm run lint` | ESLint |
+
+## Serverless routes (Vercel / compatible hosts)
+
+| Route | Purpose |
+|-------|---------|
+| `api/chat.js` | LLM chat (Groq/Gemini), optional profile context |
+| `api/market/yahoo-chart.js` | Yahoo Finance chart JSON proxy for candles |
+
+These run as **server** code: secrets use `process.env` **without** the `VITE_` prefix.
+
+## Layout (where to look)
+
+- `src/pages/` — routes (e.g. `Dashboard`, `LandingPage`)
+- `src/components/` — shared UI
+- `src/lib/` — client logic, ML adapters, quiz engines
+- `api/` — serverless handlers for this package’s deploy root
+
+For monorepo-wide context and backend fallback, see the repository root [`README.md`](../README.md).

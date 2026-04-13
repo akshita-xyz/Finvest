@@ -21,11 +21,10 @@ function readEmotionLocalDone() {
  * @param {{
  *   dashboardPrefs: Record<string, unknown> | null | undefined;
  *   walletFromMetadata: string;
- *   onSaveWallet: (address: string) => Promise<{ error?: Error | null }>;
  *   recipientName: string;
  * }} props
  */
-export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetadata, onSaveWallet, recipientName }) {
+export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetadata, recipientName }) {
   const nft = dashboardPrefs?.nft_badges && typeof dashboardPrefs.nft_badges === 'object' ? dashboardPrefs.nft_badges : {};
   const assessment = dashboardPrefs?.assessment;
   const portfolioEarned = Boolean(nft.portfolioCertificate || assessment?.completedAt);
@@ -34,21 +33,15 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
   const contract = String(import.meta.env.VITE_BADGE_NFT_CONTRACT_ADDRESS || '').trim();
   const rpc = String(import.meta.env.VITE_NFT_RPC_URL || '').trim();
 
-  const [walletDraft, setWalletDraft] = useState(walletFromMetadata || '');
   const [chainBadges, setChainBadges] = useState(/** @type {{ id: string; tokenURI: string }[]} */ ([]));
   const [chainLoading, setChainLoading] = useState(false);
   const [chainErr, setChainErr] = useState('');
-  const [walletSaving, setWalletSaving] = useState(false);
   const [certModal, setCertModal] = useState(/** @type {null | 'portfolio' | 'emotion'} */ (null));
 
   const displayName = recipientName?.trim() || 'Finvest learner';
 
-  useEffect(() => {
-    setWalletDraft(walletFromMetadata || '');
-  }, [walletFromMetadata]);
-
   const loadChain = useCallback(async () => {
-    const w = walletDraft.trim();
+    const w = String(walletFromMetadata || '').trim();
     if (!contract || !rpc || !w) {
       setChainBadges([]);
       setChainErr('');
@@ -67,45 +60,11 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
     } finally {
       setChainLoading(false);
     }
-  }, [contract, rpc, walletDraft]);
+  }, [contract, rpc, walletFromMetadata]);
 
   useEffect(() => {
     loadChain();
   }, [loadChain]);
-
-  const saveWallet = async () => {
-    setWalletSaving(true);
-    setChainErr('');
-    try {
-      const { error } = await onSaveWallet(walletDraft.trim());
-      if (error) setChainErr(error.message || 'Could not save wallet');
-      else await loadChain();
-    } finally {
-      setWalletSaving(false);
-    }
-  };
-
-  const connectInjected = async () => {
-    const eth = window.ethereum;
-    if (!eth?.request) {
-      setChainErr('No wallet found (install MetaMask or similar).');
-      return;
-    }
-    try {
-      const accounts = await eth.request({ method: 'eth_requestAccounts' });
-      const a = Array.isArray(accounts) ? accounts[0] : '';
-      if (!a) return;
-      setWalletDraft(a);
-      setWalletSaving(true);
-      const { error } = await onSaveWallet(a);
-      if (error) setChainErr(error.message || 'Could not save wallet');
-      else await loadChain();
-    } catch (e) {
-      setChainErr(e instanceof Error ? e.message : 'Wallet connection failed');
-    } finally {
-      setWalletSaving(false);
-    }
-  };
 
   const portfolioIssued =
     nft.portfolioCertificateAt ||
@@ -158,8 +117,8 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
         Certificates &amp; badges
       </h2>
       <p className="account-nft-lead">
-        Complete each learning flow to unlock a certificate stored on your profile. On-chain NFTs are optional: connect a
-        wallet to list badges the contract owner has minted to your address.
+        Complete each learning flow to unlock a certificate stored on your profile. On-chain badges are minted from the
+        deployer wallet; see the note below when the contract is configured.
       </p>
 
       <div className="account-nft-grid">
@@ -303,46 +262,33 @@ export default function ProfileNftCertificates({ dashboardPrefs, walletFromMetad
           <p className="account-nft-hint">
             Contract and RPC are configured. Mint from the deployer wallet (see <code className="account-code">blockchain/scripts/mint-badge.js</code>) — efficient use of chain is batch mint + one URI template per badge type.
           </p>
-          <div className="account-nft-wallet-row">
-            <input
-              type="text"
-              className="auth-input account-nft-input"
-              placeholder="0x… wallet address"
-              value={walletDraft}
-              onChange={(e) => setWalletDraft(e.target.value)}
-              spellCheck={false}
-              autoComplete="off"
-            />
-            <button type="button" className="auth-submit account-nft-btn" onClick={saveWallet} disabled={walletSaving}>
-              {walletSaving ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" className="account-nft-secondary" onClick={connectInjected} disabled={walletSaving}>
-              Connect wallet
-            </button>
-          </div>
-          {chainLoading ? (
-            <p className="account-nft-status">
-              <Loader2 className="account-nft-spin" size={16} aria-hidden /> Reading chain…
-            </p>
-          ) : null}
-          {chainErr ? (
-            <p className="auth-banner auth-banner--error" role="alert">
-              {chainErr}
-            </p>
-          ) : null}
-          {chainBadges.length > 0 ? (
-            <ul className="account-nft-chain-list">
-              {chainBadges.map((b) => (
-                <li key={b.id} className="account-nft-chain-item">
-                  <span className="account-nft-token">#{b.id}</span>
-                  <span className="account-nft-uri" title={b.tokenURI}>
-                    {b.tokenURI || '…'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : contract && rpc && walletDraft.trim() && !chainLoading && !chainErr ? (
-            <p className="account-nft-muted">No badge tokens found for this address.</p>
+          {String(walletFromMetadata || '').trim() ? (
+            <>
+              {chainLoading ? (
+                <p className="account-nft-status">
+                  <Loader2 className="account-nft-spin" size={16} aria-hidden /> Reading chain…
+                </p>
+              ) : null}
+              {chainErr ? (
+                <p className="auth-banner auth-banner--error" role="alert">
+                  {chainErr}
+                </p>
+              ) : null}
+              {chainBadges.length > 0 ? (
+                <ul className="account-nft-chain-list">
+                  {chainBadges.map((b) => (
+                    <li key={b.id} className="account-nft-chain-item">
+                      <span className="account-nft-token">#{b.id}</span>
+                      <span className="account-nft-uri" title={b.tokenURI}>
+                        {b.tokenURI || '…'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : !chainLoading && !chainErr ? (
+                <p className="account-nft-muted">No badge tokens found for this address.</p>
+              ) : null}
+            </>
           ) : null}
         </div>
       ) : null}

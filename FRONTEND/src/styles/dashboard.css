@@ -973,29 +973,6 @@
   cursor: not-allowed;
 }
 
-.db-risk-explain {
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
-}
-
-.db-risk-explain p {
-  margin: 0;
-  color: #1e3a8a;
-  line-height: 1.55;
-  font-size: 0.88rem;
-}
-
-.db-risk-explain code {
-  font-size: 0.8em;
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.7);
-  color: #1e40af;
-}
-
 .db-risk-chart-miss {
   margin: 0 0 14px;
   padding: 10px 12px;

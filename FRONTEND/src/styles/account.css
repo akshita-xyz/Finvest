@@ -390,47 +390,6 @@
   background: rgba(0, 0, 0, 0.35);
 }
 
-.account-nft-wallet-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.account-nft-input {
-  flex: 1 1 200px;
-  min-width: 0;
-}
-
-.account-nft-btn {
-  flex: 0 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.account-nft-secondary {
-  font-family: var(--M);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: var(--paper);
-  cursor: pointer;
-}
-
-.account-nft-secondary:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.account-nft-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .account-nft-status {
   display: flex;
   align-items: center;
@@ -642,16 +601,6 @@
   background: rgba(230, 240, 250, 0.95);
   color: #334155;
   border: 1px solid rgba(120, 160, 200, 0.2);
-}
-
-.auth-card--account .account-nft-secondary {
-  border-color: rgba(120, 160, 200, 0.35);
-  color: #2c3d52;
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.auth-card--account .account-nft-secondary:hover:not(:disabled) {
-  background: rgba(232, 244, 255, 0.95);
 }
 
 .auth-card--account .account-nft-chain-item {

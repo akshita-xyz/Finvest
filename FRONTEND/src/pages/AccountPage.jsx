@@ -280,16 +280,6 @@ export default function AccountPage() {
               recipientName={displayNameFromUser(user)}
               dashboardPrefs={profileRow?.dashboard_prefs}
               walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
-              onSaveWallet={async (address) => {
-                const { error, user: u } = await updateUserMetadata({ wallet_address: address });
-                if (error) return { error };
-                if (u) await ensureUserProfile(u);
-                if (user?.id) {
-                  const { data } = await fetchUserProfile(user.id);
-                  if (data) setProfileRow(data);
-                }
-                return { error: null };
-              }}
             />
           </section>
 

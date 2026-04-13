@@ -1169,15 +1169,6 @@ function Dashboard() {
             {!riskLoading && riskError && <p className="db-live-empty">{riskError}</p>}
             {!riskLoading && !riskError && riskResult && (
               <>
-                <div className="db-risk-explain">
-                  <p>
-                    <strong>Finnhub</strong> quote + <strong>stock/metric</strong> power the summary cards. The chart uses{' '}
-                    <strong>TradingView Lightweight Charts™</strong> with OHLC + volume from Yahoo (same{' '}
-                    <code>/__yahoo</code> or backend proxy as before). Drag the crosshair to read O/H/L/C per bar. Stop and R:R
-                    are educational only.
-                  </p>
-                </div>
-
                 <RiskCandlestickChart symbol={riskResult.symbol} finnhubToken={FINNHUB_API_KEY} />
 
                 <div className="db-risk-grid">

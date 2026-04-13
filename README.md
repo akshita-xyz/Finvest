@@ -1,140 +1,74 @@
-# FINVEST - Investment Fear Reduction Platform
+# FINVEST
 
 **Feel the risk, master the outcome.**
 
-An AI/ML-powered platform that reduces investing fear in young users through behavioral analysis, risk simulation, and personalized portfolio recommendations.
+FINVEST is a web app for young investors who hesitate because of **loss aversion** and unclear risk. The product combines **experiential learning** (simulations and scenarios), **behavioral scoring** (quizzes with timing signals), and **personalized allocation** so users rehearse outcomes before committing real capital.
 
-## Problem Statement
+## Theory (why this exists)
 
-Young users fear investing due to the fear of loss. FINVEST contextualizes risk and simulates losses before real exposure, reducing fear through education and simulation.
+- **Loss aversion** (Kahneman & Tversky): losses feel roughly twice as painful as equivalent gains feel good—so fear of drawdowns blocks participation.
+- **Mental accounting & framing**: showing volatility and “what if” paths in a safe environment reframes risk from a vague threat into something measurable.
+- **Behavioral measurement**: response time and answer patterns proxy for patience, impulsivity, and planning—traits that map to portfolio suitability more usefully than a single risk checkbox.
 
-## Core Features
+## What’s in the repo
 
-- **Risk Stimulation Sandbox** - Experience market scenarios risk-free
-- **AI-Based Portfolio Explainer** - Natural language explanations
-- **Loss Probability Meter** - Visual display of potential outcomes
-- **Behavioral Fear Score** - 1-100 score based on decision patterns
-- **Monte Carlo Simulation** - 1000+ market scenarios
-- **Personalized Portfolios** - Asset allocation based on your profile
+| Area | Role |
+|------|------|
+| `FRONTEND/` | React (Vite), dashboard, onboarding, ML-driven UI, serverless `api/` for chat and market proxies |
+| `BACKEND/` | Optional Express API + Supabase (local or legacy integration) |
+| `ML/` | JS modules: behavior, clustering, portfolio logic, simulation |
+| `supabase/sql/` | PostgreSQL migrations for profiles |
+| `api/` (repo root) | ESM re-exports for Vercel when **Root Directory** is the repository root |
 
-## Tech Stack
+## Commands
 
-- **Frontend**: React + Vite, Tailwind CSS, Framer Motion, Recharts
-- **Backend**: Node.js + Express.js
-- **Database**: Supabase (PostgreSQL + Auth)
-- **ML**: JavaScript-based algorithms (K-means, Monte Carlo)
+### Frontend (primary app)
 
-## Quick Start
-
-### Frontend
 ```bash
 cd FRONTEND
 npm install
-# Create FRONTEND/.env with either:
-#   VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
-#   or SUPABASE_URL + SUPABASE_ANON_KEY
+cp .env.example .env   # then edit; never commit real secrets
 npm run dev
 ```
 
-### Backend
+```bash
+npm run build
+npm run preview
+npm run lint
+```
+
+### Backend (optional)
+
 ```bash
 cd BACKEND
 npm install
-# Create .env with SUPABASE_URL and SUPABASE_ANON_KEY
+# BACKEND/.env: SUPABASE_URL, SUPABASE_ANON_KEY (Supabase Dashboard → Project Settings → API)
 npm start
 ```
 
-### Vercel: `/api/chat` must exist on the deployment
+### Supabase SQL (local reference)
 
-If production returns **HTTP 404** for `POST /api/chat`, the serverless route is not part of that deployment.
+Apply migrations in order using the Supabase SQL editor or CLI against your project: `supabase/sql/001_user_profiles.sql`, then `002_user_profiles_avatar_url.sql`.
 
-- **Option A — Root Directory = `FRONTEND`:** Vercel uses [`FRONTEND/vercel.json`](FRONTEND/vercel.json) and [`FRONTEND/api/chat.js`](FRONTEND/api/chat.js). No repo-root `api/` needed.
-- **Option B — Root Directory = repository root:** Vercel uses the root [`vercel.json`](vercel.json) and only discovers [`api/`](api/) next to that file. Include [`api/chat.js`](api/chat.js) (it re-exports [`FRONTEND/api/chat.js`](FRONTEND/api/chat.js)) and [`package.json`](package.json) with `"type": "module"` at the repo root. Redeploy after adding them.
+## Environment essentials
 
-`GROQ_API_KEY` (no `VITE_`) and Supabase-related env vars must still be set in the Vercel project; a 404 is a routing/deploy layout issue, not a missing key.
+- **Browser / Vite**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `FRONTEND/.env` (see `FRONTEND/.env.example`).
+- **Chat (`POST /api/chat`)**: server-side `GROQ_API_KEY` and/or Gemini keys; `LLM_PROVIDER=auto|groq|gemini` (auto prefers Groq when `GROQ_API_KEY` is set). Do not put secret keys in `VITE_*`.
+- **Market data**: optional `VITE_FINNHUB_API_KEY` / `VITE_ALPHA_VANTAGE_API_KEY` for quotes and news.
 
-## Project Structure
+## Vercel: avoid 404 on `/api/chat`
 
-```
-FINVEST/
-├── FRONTEND/          # React application
-│   ├── src/
-│   │   ├── pages/    # Page components
-│   │   ├── components/  # UI components
-│   │   └── App.jsx   # Main app
-│   └── package.json
-├── BACKEND/           # Express API
-│   ├── src/
-│   │   ├── server.js  # Main server
-│   │   ├── supabase/  # DB client
-│   │   └── utils/     # Helpers
-│   └── package.json
-├── ML/                # Machine Learning modules
-│   ├── BehaviorAnalysis/  # Fear score, classification
-│   ├── Clustering/       # K-means implementation
-│   ├── PortfolioLogic/   # Portfolio generation
-│   └── SimulationEngine/ # Monte Carlo, scenarios
-├── api/               # Vercel serverless when Root Directory = repo root (e.g. chat.js)
-├── package.json       # Root `type: module` for api/*.js ESM
-└── docs/              # Documentation
-```
+Serverless routes must be part of the deployment that Vercel builds:
 
-## Key Algorithms
+- **Root Directory = `FRONTEND`**: uses `FRONTEND/vercel.json` and `FRONTEND/api/*`.
+- **Root Directory = repo root**: Vercel uses root `vercel.json` and `api/*.js` (root `api/chat.js` re-exports the frontend handler). Root `package.json` uses `"type": "module"` for ESM.
 
-### Fear Score (1-100)
-Based on:
-- Hesitation time during decisions
-- Risk response patterns
-- Financial goals
-- Income level
-- Age demographics
+Set the same env vars in the Vercel project; a 404 is usually routing/layout, not a missing API key.
 
-### User Classification
-- **Risk-Averse** (Fear Score > 65): Capital preservation focus
-- **Balanced** (Fear Score 45-65): Mix of growth and stability
-- **Growth-Seeker** (Fear Score 30-45): Long-term appreciation
-- **Overconfident** (Fear Score < 30): May underestimate risk
+## Documentation
 
-### Portfolio Allocation
-Varies by fear score, example for Balanced (Score 45-65):
-- Stocks (Aggressive): 35%
-- Stocks (Growth): 10%
-- Bonds (Intermediate): 30%
-- Bonds (Long): 15%
-- Cash: 10%
-
-## Demo Flow
-
-1. **Landing Page** → Click "Get Started"
-2. **Onboarding** → Answer 3 questions with timing analysis
-3. **Fear Score Reveal** → See your 1-100 score
-4. **Classification** → Learn your investor profile
-5. **Portfolio Preview** → View suggested allocation
-6. **Monte Carlo** → Watch 1000 simulation paths
-7. **Scenario Test** → See historical crash impacts
-8. **Future You** → Project wealth over time
-
-## Available Scripts
-
-```bash
-# Frontend
-npm run dev      # Development server
-npm run build    # Production build
-npm run preview  # Preview production build
-npm run lint     # ESLint check
-
-# Backend
-npm start        # Start server
-```
-
-## Hackathon Documentation
-
-See `docs/HACKATHON_PROMPT.md` for:
-- Feature breakdown by phase
-- Work division for 4 people
-- Detailed roadmap
-- Algorithm explanations
-- Demo flow suggestions
+- [`docs/QUIZ_CALCULATIONS.md`](docs/QUIZ_CALCULATIONS.md) — exact quiz and pillar math.
+- [`docs/HACKATHON_PROMPT.md`](docs/HACKATHON_PROMPT.md) — brief product spec and team split.
 
 ## License
 

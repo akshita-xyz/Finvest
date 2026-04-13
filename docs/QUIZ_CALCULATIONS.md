@@ -1,24 +1,28 @@
-# How quiz scores are calculated
+# Quiz calculations — specification
 
-This document describes the **exact** scoring logic implemented in the Finvest frontend for:
+This document is the **authoritative reference** for scoring in the Finvest frontend. If question banks or constants change in code, update this file in the same change.
 
-1. **Emotional Readiness Test** (Dashboard) — source: [`FRONTEND/src/lib/emotionInvestingMindset.js`](../FRONTEND/src/lib/emotionInvestingMindset.js)
-2. **Decode Your Finance Self** (Personalized Portfolio timed quiz) — source: [`FRONTEND/src/lib/personalizedPortfolioEngine.js`](../FRONTEND/src/lib/personalizedPortfolioEngine.js)
+**Sources of truth**
 
-Everything below matches those files as of the repo snapshot; if questions or numbers change in code, update this doc in the same PR.
+- Emotional Readiness: [`FRONTEND/src/lib/emotionInvestingMindset.js`](../FRONTEND/src/lib/emotionInvestingMindset.js)
+- Decode Your Finance Self (timed): [`FRONTEND/src/lib/personalizedPortfolioEngine.js`](../FRONTEND/src/lib/personalizedPortfolioEngine.js)
+
+## Why this shape (theory)
+
+- **Pillar scores** — Dimensions (regulation, FOMO, loss composure, etc.) are scored separately so feedback is **actionable** (“grow patience”) rather than one opaque number.
+- **Normalization** — Raw sums are divided by per-pillar theoretical maxima so scales are comparable across pillars with different question weights.
+- **Timed assessment** — Average hesitation feeds both **traits** (patience vs. impulsivity) and **fear** with caps, reflecting that very fast answers may indicate under-reading, and very slow ones may indicate anxiety—both useful signals in a **non-clinical** educational tool.
 
 ---
 
-## 1. Emotional Readiness Test (“emotional quiz”)
+## 1. Emotional Readiness Test (Dashboard)
 
-### What you store
+### Stored data
 
-- Answers are a map **`questionId` → `optionId`** (e.g. `eq3` → `eq3a`).
-- Only the **selected option’s** `scores` object contributes; there is no time-based signal.
+- Map **`questionId` → `optionId`** (e.g. `eq3` → `eq3a`).
+- Only the selected option’s `scores` object counts; **no** time-based signal.
 
-### Pillars (parameters)
-
-Each pillar is one key in `scores` on options. Human-readable titles:
+### Pillars
 
 | Pillar key | Title |
 |------------|--------|
@@ -29,12 +33,12 @@ Each pillar is one key in `scores` on options. Human-readable titles:
 | `selfHonesty` | Self-honesty & motives |
 | `balanceRecovery` | Balance & recovery |
 
-### Per-question → pillar mapping
+### Per-question option scores
 
-For each question, **each answer option** adds the pillar points listed in its `scores` (only keys present on that option; missing pillars add **0** for that answer).
+For each question, each option adds only the `scores` keys it defines (missing keys add 0).
 
-| Question ID | Topic (short) | Option IDs | Pillar points added (`scores`) |
-|-------------|---------------|--------------|----------------------------------|
+| Question ID | Topic (short) | Option IDs | Pillar points (`scores`) |
+|-------------|---------------|------------|---------------------------|
 | `eq1` | Reaction to “market crashed” | `eq1a` | `emotionalRegulation: 3`, `lossComposure: 2` |
 | | | `eq1b` | `emotionalRegulation: 2` |
 | | | `eq1c` | `emotionalRegulation: 0`, `impulseFomo: 0` |
@@ -77,14 +81,10 @@ For each question, **each answer option** adds the pillar points listed in its `
 For each pillar key \(k\):
 
 \[
-\text{raw}[k] = \sum_{\text{answered questions}} \text{selected option’s } \text{scores}[k] \text{ (or 0 if missing)}
+\text{raw}[k] = \sum_{\text{answered}} \text{selected option’s } \text{scores}[k] \ (\text{or } 0)
 \]
 
-### Normalization (“percent” per pillar)
-
-For each pillar, the code precomputes **`PILLAR_MAX[k]`**: for **each** question, take the **maximum** points that question could have added to pillar \(k\) across its three options, then **sum** those maxima over all 12 questions.
-
-Computed values from the current question bank:
+### `PILLAR_MAX` (sum of per-question maxima)
 
 | Pillar | `PILLAR_MAX` |
 |--------|----------------|
@@ -95,25 +95,15 @@ Computed values from the current question bank:
 | `selfHonesty` | 13 |
 | `balanceRecovery` | 11 |
 
-Then:
-
 \[
-\text{percent}[k] = \text{round}\left(100 \times \frac{\text{raw}[k]}{\text{PILLAR\_MAX}[k]}\right)
+\text{percent}[k] = \text{round}\left(100 \times \frac{\text{raw}[k]}{\max(\text{PILLAR\_MAX}[k], 1)}\right)
 \]
 
-(If `PILLAR_MAX` were 0, the code uses 1 to avoid division by zero; with the current bank this does not occur.)
-
-### Level bands (per pillar)
+### Levels
 
 - **`strong`**: `percent >= 72`
 - **`grow`**: `percent < 48`
-- **`watch`**: otherwise (`48 <= percent < 72`)
-
-Lists in the UI:
-
-- **Mastered**: pillars with level `strong` (titles only).
-- **Improve**: level `grow`.
-- **Watch out**: level `watch`.
+- **`watch`**: `48 <= percent < 72`
 
 ### Overall readiness
 
@@ -121,150 +111,115 @@ Lists in the UI:
 \text{overallReadiness} = \text{round}\left(\frac{1}{6} \sum_{k} \text{percent}[k]\right)
 \]
 
-(i.e. simple average of the six pillar percents).
-
 ### Archetype (from overall only)
 
-| Condition | Archetype label |
-|-----------|-----------------|
+| Condition | Label |
+|-----------|--------|
 | `overallReadiness >= 78` | The Grounded Investor |
 | `58 <= overallReadiness < 78` | The Growing Steward |
 | `42 <= overallReadiness < 58` | The Cautious Learner |
 | `overallReadiness < 42` | The Recovery-First Explorer |
 
-The variable is initialized to **The Mindful Builder** in code, but the `if / else if / else` chain assigns one of the four names above for any finite numeric `overallReadiness`, so that default does not appear in normal results.
-
 ### Closing copy
 
-`closingAdvice` and `lookAfter` strings are **rule-based** from counts of improve areas (`improveAreas.length`), not from numeric scores beyond that.
+`closingAdvice` / `lookAfter` are **rule-based** from `improveAreas.length`, not from pillar percents beyond that.
 
 ---
 
-## 2. Decode Your Finance Self (timed assessment quiz)
+## 2. Decode Your Finance Self (timed)
 
-### What you store
+### Stored data
 
-- **`answers`**: map **`questionId` → `optionId`** for each entry in `ASSESSMENT_QUESTIONS` (fixed order in code).
-- **`hesitationMs`**: array of dwell/hesitation times in milliseconds, **one entry per question in the same order** as `ASSESSMENT_QUESTIONS`.
+- **`answers`**: `questionId` → `optionId` for `ASSESSMENT_QUESTIONS` order.
+- **`hesitationMs`**: one dwell time per question, same order as `ASSESSMENT_QUESTIONS`.
 
-Implementation reference: `aggregateTraits` and `buildAssessmentResult` in [`personalizedPortfolioEngine.js`](../FRONTEND/src/lib/personalizedPortfolioEngine.js).
+Entrypoints: `aggregateTraits`, `buildAssessmentResult` in `personalizedPortfolioEngine.js`.
 
-### Question → answer metadata
+### Options
 
-Each option may define:
+- **`traits`**: only `patient`, `impulsive`, `overconfident`, `planning`, `leverage_comfort` are summed; other keys (e.g. `balanced`) are ignored for aggregation.
+- **`fearDelta`**: added to a running fear score (starts at 50).
 
-- **`traits`**: partial map; only these keys are **read and summed** by the engine: `patient`, `impulsive`, `overconfident`, `planning`, `leverage_comfort`. Any other trait key on an option (e.g. `balanced`) is **ignored** for aggregation.
-- **`fearDelta`**: a number added to the running fear score (starting from 50).
+#### `decision_style`
 
-#### `decision_style` — Before you act on a new investment idea…
+| Option ID | Traits | `fearDelta` |
+|-----------|--------|-------------|
+| `read_first` | `patient +1`, `impulsive -0.8`, `planning +1` | `+8` |
+| `facts_first` | `patient +0.5`, `impulsive -0.3`, `planning +0.6` | `+3` |
+| `immediate` | `patient -0.9`, `impulsive +1`, `overconfident +0.7`, `planning -0.4` | `-10` |
 
-| Option ID | Label (short) | Traits summed | `fearDelta` |
-|-----------|---------------|---------------|-------------|
-| `read_first` | Read docs / fine print | `patient: +1`, `impulsive: -0.8`, `planning: +1` | `+8` |
-| `facts_first` | Few key facts then decide | `patient: +0.5`, `impulsive: -0.3`, `planning: +0.6` | `+3` |
-| `immediate` | Gut / right away | `patient: -0.9`, `impulsive: +1`, `overconfident: +0.7`, `planning: -0.4` | `-10` |
+#### `holding_period`
 
-#### `holding_period` — Natural holding period
+| Option ID | Traits | `fearDelta` |
+|-----------|--------|-------------|
+| `intraday` | `impulsive +0.6`, `overconfident +0.3` | `-12` |
+| `months` | `patient +0.3` only | `+2` |
+| `years` | `patient +1`, `planning +0.8` | `+10` |
 
-| Option ID | Label (short) | Traits summed | `fearDelta` |
-|-----------|---------------|---------------|-------------|
-| `intraday` | Days to weeks | `impulsive: +0.6`, `overconfident: +0.3` | `-12` |
-| `months` | Several months | `patient: +0.3` only (`balanced: 0.5` on the option is **not** applied) | `+2` |
-| `years` | Years / decades | `patient: +1`, `planning: +0.8` | `+10` |
+#### `market_drop`
 
-#### `market_drop` — Portfolio −20% in a month
+| Option ID | Traits | `fearDelta` |
+|-----------|--------|-------------|
+| `sell` | — | `+22` |
+| `wait` | `patient +0.5` | `-4` |
+| `buy` | `overconfident +0.4` | `-14` |
+| `advisor` | `planning +0.7` | `+6` |
 
-| Option ID | Label (short) | Traits summed | `fearDelta` |
-|-----------|---------------|---------------|-------------|
-| `sell` | Sell / reduce quickly | _(none)_ | `+22` |
-| `wait` | Wait it out | `patient: +0.5` | `-4` |
-| `buy` | Buy more | `overconfident: +0.4` | `-14` |
-| `advisor` | Advisor / read more | `planning: +0.7` | `+6` |
+#### `credit_comfort`
 
-#### `credit_comfort` — Loans / credit / bank policies
+| Option ID | Traits | `fearDelta` |
+|-----------|--------|-------------|
+| `prefer_loans` | `leverage_comfort +1` | `-5` |
+| `neutral_credit` | `leverage_comfort +0.3` | `+4` |
+| `avoid_debt` | `leverage_comfort -0.8`, `patient +0.3` | `+12` |
 
-| Option ID | Label (short) | Traits summed | `fearDelta` |
-|-----------|---------------|---------------|-------------|
-| `prefer_loans` | Comfortable comparing credit | `leverage_comfort: +1` | `-5` |
-| `neutral_credit` | Rare credit, simple | `leverage_comfort: +0.3` | `+4` |
-| `avoid_debt` | Avoid debt | `leverage_comfort: -0.8`, `patient: +0.3` | `+12` |
+### Trait aggregation
 
-### Trait aggregation (from answers only)
-
-Starting values: `patient`, `impulsive`, `overconfident`, `planning`, `leverage_comfort` all **0**.
-
-For each answered question, add the option’s trait contributions as above.
-
-Then **clamp** each trait to **[-2, 4]**:
-
-\[
-\text{trait\_final} = \max(-2, \min(4, \text{trait\_sum}))
-\]
+Start traits at 0; sum contributions; **clamp** each to **[-2, 4]**.
 
 ### Fear score (answers + hesitation)
 
-1. Start **`fear = 50`**.
-2. For each answered option with numeric `fearDelta`, do **`fear += fearDelta`**.
-3. Compute **`avgHes`** = mean of `hesitationMs` if length > 0, else **4000** ms.
-4. **`hesitationPatience`** = `min(1, avgHes / 28000)`.
-5. Trait adjustments from timing (also fed into patience / impulsive before clamp):
-   - **`patient += hesitationPatience * 0.9`**
-   - **`impulsive += (1 - hesitationPatience) * 0.55`**
-6. Fear adjustments from timing:
-   - **`fear += min(18, avgHes / 900)`**
-   - **`fear -= min(12, 3000 / max(avgHes, 400))`**
-7. **`fearScore = round(fear)`** then clamp to **[1, 100]**.
+1. `fear = 50` + sum of `fearDelta` for chosen options.
+2. `avgHes` = mean(`hesitationMs`) if length > 0, else **4000** ms.
+3. `hesitationPatience` = `min(1, avgHes / 28000)`.
+4. `patient += hesitationPatience * 0.9`; `impulsive += (1 - hesitationPatience) * 0.55` (then traits clamped as above).
+5. `fear += min(18, avgHes / 900)`; `fear -= min(12, 3000 / max(avgHes, 400))`.
+6. `fearScore = round(clamp(fear, 1, 100))`.
 
-**Intuition:** slower average response nudges **patience** up and **impulsive** down; it also raises fear via `avgHes/900` but reduces it via the `3000/avgHes` term (very slow answers hit the `min` caps).
+### Cluster (nearest centroid)
 
-### Investor “cluster” (nearest centroid)
+Vector: `[fearN, patienceN, impulseN, planN]` with  
+`fearN = fearScore/100`, `patienceN = (patient+2)/6`, `impulseN = (impulsive+2)/6`, `planN = (planning+2)/6` (clamped traits).
 
-The engine builds a 4-vector (all in roughly \([0,1]\)):
-
-| Component | Formula |
-|-----------|---------|
-| Fear dimension | `fearN = fearScore / 100` |
-| Patience dimension | `patienceN = (patient + 2) / 6` |
-| Impulse dimension | `impulseN = (impulsive + 2) / 6` |
-| Planning dimension | `planN = (planning + 2) / 6` |
-
-(`patient`, `impulsive`, `planning` here are the **clamped** trait values.)
-
-Fixed centroids (same order: `[fearN, patienceN, impulseN, planN]`):
-
-| Key | Centroid |
-|-----|----------|
+| Key | Centroid `[fearN, patienceN, impulseN, planN]` |
+|-----|-----------------------------------------------|
 | `risk_averse` | `[0.78, 0.72, 0.22, 0.7]` |
 | `balanced` | `[0.5, 0.5, 0.45, 0.5]` |
 | `growth_seeker` | `[0.38, 0.42, 0.55, 0.42]` |
 | `overconfident` | `[0.22, 0.28, 0.88, 0.25]` |
 
-The assigned **`clusterKey`** is whichever centroid has **minimum Euclidean distance** to the user vector.
+Assign **`clusterKey`** by minimum Euclidean distance.
 
-**Note:** `overconfident` and `leverage_comfort` traits affect the **derived** fear/patience/impulse/planning indirectly (only through answers and fear deltas), but **only these four dimensions** enter the centroid distance. `leverage_comfort` is used separately for suitability copy (below).
+### Allocation from `fearScore` only
 
-### Allocation bands (from `fearScore` only)
-
-`allocationFromFearScore(fearScore)` returns stocks / bonds / cash:
-
-| `fearScore` range | Stocks | Bonds | Cash | Label |
-|-------------------|--------:|-----:|-----:|--------|
+| `fearScore` | Stocks | Bonds | Cash | Label |
+|-------------|--------:|------:|-----:|--------|
 | < 28 | 78 | 17 | 5 | Aggressive growth mix |
 | 28–44 | 62 | 28 | 10 | Growth tilt |
 | 45–61 | 48 | 38 | 14 | Balanced |
 | 62–77 | 32 | 48 | 20 | Conservative |
 | ≥ 78 | 18 | 55 | 27 | Capital preservation |
 
-### Suitability strings (simple rules)
+### Suitability copy (rules)
 
-- **Trading style:** if `impulsive > patient + 0.3` → active / shorter-horizon copy; else longer horizon / DCA copy.
-- **Loans / policies:** if `leverage_comfort > 0.4` → more comfortable with loan comparison copy; else minimal leverage copy.
+- Trading style: if `impulsive > patient + 0.3` → shorter-horizon copy; else DCA / longer horizon.
+- Leverage: if `leverage_comfort > 0.4` → loan-comparison copy; else minimal leverage copy.
 
 ---
 
-## Quick reference: which file owns what
+## API entrypoints
 
-| Quiz | Questions constant | Evaluation entrypoint |
-|------|--------------------|-------------------------|
+| Quiz | Constant | Function |
+|------|----------|----------|
 | Emotional Readiness | `EMOTION_QUESTIONS` | `evaluateEmotionMindset(answers)` |
 | Decode Your Finance Self | `ASSESSMENT_QUESTIONS` | `buildAssessmentResult(answers, hesitationMs)` |
