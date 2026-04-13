@@ -79,10 +79,3 @@ Default port is in `BACKEND/.env.example` (e.g. `3001`).
 | **EVM RPC + contract** | Optional NFT badges | `VITE_NFT_RPC_URL`, `VITE_BADGE_NFT_CONTRACT_ADDRESS` |
 
 Chat provider selection: `LLM_PROVIDER=auto|groq|gemini` — with `auto`, Groq is preferred when `GROQ_API_KEY` is set.
-
-## Deploy notes (Vercel)
-
-- If **Root Directory** is **`FRONTEND`**, Vercel uses `FRONTEND/vercel.json` and `FRONTEND/api/*`.
-- If **Root Directory** is the **repository root**, use root `vercel.json` and `api/*.js` (e.g. `api/chat.js` re-exports the frontend handler). Root [`package.json`](package.json) sets `"type": "module"` for ESM.
-
-Set the same environment variables in the Vercel project (especially `GROQ_API_KEY` without `VITE_` for serverless).
