@@ -44,6 +44,15 @@ npm install
 npm start
 ```
 
+### Vercel: `/api/chat` must exist on the deployment
+
+If production returns **HTTP 404** for `POST /api/chat`, the serverless route is not part of that deployment.
+
+- **Option A — Root Directory = `FRONTEND`:** Vercel uses [`FRONTEND/vercel.json`](FRONTEND/vercel.json) and [`FRONTEND/api/chat.js`](FRONTEND/api/chat.js). No repo-root `api/` needed.
+- **Option B — Root Directory = repository root:** Vercel uses the root [`vercel.json`](vercel.json) and only discovers [`api/`](api/) next to that file. Include [`api/chat.js`](api/chat.js) (it re-exports [`FRONTEND/api/chat.js`](FRONTEND/api/chat.js)) and [`package.json`](package.json) with `"type": "module"` at the repo root. Redeploy after adding them.
+
+`GROQ_API_KEY` (no `VITE_`) and Supabase-related env vars must still be set in the Vercel project; a 404 is a routing/deploy layout issue, not a missing key.
+
 ## Project Structure
 
 ```
@@ -65,6 +74,8 @@ FINVEST/
 │   ├── Clustering/       # K-means implementation
 │   ├── PortfolioLogic/   # Portfolio generation
 │   └── SimulationEngine/ # Monte Carlo, scenarios
+├── api/               # Vercel serverless when Root Directory = repo root (e.g. chat.js)
+├── package.json       # Root `type: module` for api/*.js ESM
 └── docs/              # Documentation
 ```
 

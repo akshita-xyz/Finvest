@@ -1,0 +1,6 @@
+{
+  "name": "finvest-monorepo",
+  "private": true,
+  "type": "module",
+  "description": "Root metadata so repo-level api/*.js ESM re-exports work on Vercel."
+}
