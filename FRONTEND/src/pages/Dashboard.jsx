@@ -36,10 +36,8 @@ function readNavSectionFromHash() {
   return 'risk-sandbox';
 }
 
-/** In dev, Vite proxies `/chat` and `/api` to BACKEND (see vite.config.js) so the AI works without VITE_BACKEND_URL. */
-const CHAT_BACKEND = import.meta.env.DEV
-  ? ''
-  : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
+/** Chat: same-origin `POST /api/chat` (Vercel serverless). In local `npm run dev`, Vite can proxy `/api/*` to BACKEND:3001 — or run `vercel dev` for the real serverless route. */
+const CHAT_URL = '/api/chat';
 
 function displayNameForAi(user) {
   if (!user) return '';
@@ -527,7 +525,7 @@ function Dashboard() {
     setChatSending(true);
 
     try {
-      const res = await fetch(`${CHAT_BACKEND}/chat`, {
+      const res = await fetch(CHAT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -542,7 +540,7 @@ function Dashboard() {
         const reply =
           typeof data?.reply === 'string'
             ? data.reply
-            : `Chat server returned HTTP ${res.status}. Run \`npm start\` in BACKEND and set GROQ_API_KEY or GEMINI_API_KEY in BACKEND/.env.`;
+            : `Chat server returned HTTP ${res.status}. Set GROQ_API_KEY or GEMINI_API_KEY (and SUPABASE_*) in the Vercel project, or run BACKEND locally with Vite proxying /api.`;
         setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
         return;
       }
@@ -554,7 +552,7 @@ function Dashboard() {
         {
           role: 'ai',
           text:
-            'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND) and set GROQ_API_KEY or GEMINI_API_KEY in BACKEND/.env. In dev, Vite proxies `/chat` to port 3001.',
+            'Could not reach the Finvest AI chat API (`POST /api/chat`). On Vercel, set GROQ_API_KEY or GEMINI_API_KEY in project env. Locally: run `vercel dev` in FRONTEND, or `npm start` in BACKEND with Vite proxying `/api` to port 3001.',
         },
       ]);
     } finally {

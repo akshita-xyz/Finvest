@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+/* eslint-disable-next-line no-unused-vars -- motion used as <motion.div /> */
 import { AnimatePresence, motion } from 'framer-motion';
 import '../styles/investing-stories.css';
 

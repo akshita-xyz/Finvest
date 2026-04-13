@@ -44,6 +44,10 @@ npm install
 npm start
 ```
 
+### Vercel (frontend-first)
+
+Chat and market proxies run as serverless routes under `FRONTEND/api/`. See **[FRONTEND/README.md](FRONTEND/README.md)** for Root Directory, environment variables (`GROQ_API_KEY`, `SUPABASE_URL`, etc.), and `vercel dev` vs legacy BACKEND. If the Vercel **Root Directory** is the repo root, thin re-exports exist under [`api/`](api/) that delegate to `FRONTEND/api/`.
+
 ## Project Structure
 
 ```
@@ -65,6 +69,7 @@ FINVEST/
 │   ├── Clustering/       # K-means implementation
 │   ├── PortfolioLogic/   # Portfolio generation
 │   └── SimulationEngine/ # Monte Carlo, scenarios
+├── api/               # Optional Vercel re-exports when Root Directory = repo root
 └── docs/              # Documentation
 ```
 

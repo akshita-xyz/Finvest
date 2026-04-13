@@ -18,10 +18,17 @@ const yahooChartProxy = {
   },
 }
 
-/** Same-origin in dev so VITE_BACKEND_URL is optional: run `npm start` in BACKEND on 3001. */
+/**
+ * Optional local fallback: proxy `/api` to BACKEND:3001. Express uses `/chat` (not `/api/chat`) — rewrite only that path.
+ * For chat without BACKEND, use `vercel dev` in FRONTEND (runs `/api/chat` serverless locally).
+ */
 const backendProxy = {
-  '/chat': { target: 'http://127.0.0.1:3001', changeOrigin: true },
-  '/api': { target: 'http://127.0.0.1:3001', changeOrigin: true },
+  '/api': {
+    target: 'http://127.0.0.1:3001',
+    changeOrigin: true,
+    rewrite: (path) =>
+      path.startsWith('/api/chat') ? '/chat' + path.slice('/api/chat'.length) : path,
+  },
 }
 
 // https://vite.dev/config/
@@ -47,6 +54,7 @@ export default defineConfig({
     // Rolldown/Vite 8 can fail to resolve tslib from @supabase/* when hoisting is odd; vendor copy keeps builds reliable.
     alias: {
       tslib: path.resolve(__dirname, 'vendor/tslib/tslib.es6.mjs'),
+      '@ml': path.resolve(__dirname, '../ML'),
     },
   },
 })
