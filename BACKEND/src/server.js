@@ -327,7 +327,9 @@ app.get('/api/market/yahoo-chart', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`FINVEST API server running on port ${PORT} (chat LLM: ${resolveProvider()})`);
+  const llm = resolveProvider();
+  const llmLabel = llm === 'none' ? 'none (set GROQ_API_KEY or GEMINI_API_KEY in .env)' : llm;
+  console.log(`FINVEST API server running on port ${PORT} (chat LLM: ${llmLabel})`);
 });
 
 module.exports = app;

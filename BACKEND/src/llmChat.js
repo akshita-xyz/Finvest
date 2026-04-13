@@ -1,5 +1,6 @@
 /**
- * Decode Your Finance Self /chat: Ollama (local) or Google Gemini (API key — no Ollama install).
+ * Decode Your Finance Self POST /chat: Groq (OpenAI-compatible API) or Google Gemini.
+ * @see https://console.groq.com/docs/openai
  * @see https://ai.google.dev/gemini-api/docs
  */
 
@@ -11,15 +12,25 @@ function geminiModelId() {
   return String(process.env.GEMINI_CHAT_MODEL || 'gemini-2.0-flash').trim() || 'gemini-2.0-flash';
 }
 
+function groqApiKey() {
+  return String(process.env.GROQ_API_KEY || '').trim();
+}
+
+function groqModelId() {
+  return String(process.env.GROQ_MODEL || 'llama-3.3-70b-versatile').trim() || 'llama-3.3-70b-versatile';
+}
+
 /**
- * @returns {'gemini' | 'ollama'}
+ * @returns {'gemini' | 'groq' | 'none'}
  */
 function resolveProvider() {
   const explicit = String(process.env.LLM_PROVIDER || 'auto').toLowerCase().trim();
   if (explicit === 'gemini') return 'gemini';
-  if (explicit === 'ollama') return 'ollama';
+  if (explicit === 'groq') return 'groq';
+  if (explicit !== 'auto') return 'none';
   if (geminiApiKey()) return 'gemini';
-  return 'ollama';
+  if (groqApiKey()) return 'groq';
+  return 'none';
 }
 
 /**
@@ -53,7 +64,7 @@ async function callGemini(messages) {
     return {
       text: '',
       error:
-        'Set GEMINI_API_KEY (or GOOGLE_AI_API_KEY) in BACKEND/.env for cloud chat, or install Ollama and use LLM_PROVIDER=ollama.',
+        'Set GEMINI_API_KEY (or GOOGLE_AI_API_KEY) in BACKEND/.env, or use Groq with GROQ_API_KEY and LLM_PROVIDER=groq.',
     };
   }
   const { systemInstruction, contents } = toGeminiPayload(messages);
@@ -108,37 +119,60 @@ async function callGemini(messages) {
  * @param {{ role: string, content: string }[]} messages
  * @returns {Promise<{ text: string, error: string }>}
  */
-async function callOllama(messages) {
-  const base = String(process.env.OLLAMA_HOST || 'http://127.0.0.1:11434').replace(/\/$/, '');
-  const model = String(process.env.OLLAMA_MODEL || 'llama3.2').trim();
-  if (!model) {
-    return { text: '', error: 'Set OLLAMA_MODEL in BACKEND/.env (e.g. llama3.2).' };
+async function callGroq(messages) {
+  const key = groqApiKey();
+  if (!key) {
+    return {
+      text: '',
+      error:
+        'Set GROQ_API_KEY in BACKEND/.env (https://console.groq.com/keys). Optional: GROQ_MODEL (default llama-3.3-70b-versatile).',
+    };
   }
-  const url = `${base}/api/chat`;
+  const model = groqModelId();
+  const apiMessages = messages.filter(
+    (m) =>
+      m &&
+      typeof m.content === 'string' &&
+      m.content &&
+      (m.role === 'system' || m.role === 'user' || m.role === 'assistant')
+  );
+  if (!apiMessages.some((m) => m.role === 'user')) {
+    return { text: '', error: 'No user messages to send to Groq.' };
+  }
+
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
       body: JSON.stringify({
         model,
-        messages,
-        stream: false,
-        options: { temperature: 0.65, num_predict: 1024 },
+        messages: apiMessages,
+        temperature: 0.65,
+        max_tokens: 1024,
       }),
     });
+    const raw = await res.text();
     if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      return { text: '', error: `Ollama returned ${res.status}. ${errText.slice(0, 200)}` };
+      return {
+        text: '',
+        error: `Groq returned ${res.status}. ${raw.slice(0, 280)}`,
+      };
     }
-    const data = await res.json();
-    const text = String(data?.message?.content ?? '').trim();
-    return { text, error: text ? '' : 'Empty model response from Ollama.' };
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return { text: '', error: 'Invalid JSON from Groq.' };
+    }
+    const text = String(data?.choices?.[0]?.message?.content ?? '').trim();
+    return { text, error: text ? '' : 'Empty model response from Groq.' };
   } catch (e) {
     const msg = e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e);
-    return {
-      text: '',
-      error: `Could not reach Ollama at ${url}. Run \`ollama serve\` and \`ollama pull ${model}\`, or set GEMINI_API_KEY and LLM_PROVIDER=gemini. (${msg})`,
-    };
+    return { text: '', error: `Groq request failed: ${msg}` };
   }
 }
 
@@ -151,11 +185,19 @@ async function generateChatReply(messages) {
   if (provider === 'gemini') {
     return callGemini(messages);
   }
-  return callOllama(messages);
+  if (provider === 'groq') {
+    return callGroq(messages);
+  }
+  return {
+    text: '',
+    error:
+      'No LLM configured. Set GROQ_API_KEY in BACKEND/.env for Groq, or GEMINI_API_KEY for Gemini. With LLM_PROVIDER=auto, Gemini is used if its key is set, otherwise Groq.',
+  };
 }
 
 module.exports = {
   resolveProvider,
   generateChatReply,
   geminiApiKey,
+  groqApiKey,
 };

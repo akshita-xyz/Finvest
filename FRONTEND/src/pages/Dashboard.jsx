@@ -542,7 +542,7 @@ function Dashboard() {
         const reply =
           typeof data?.reply === 'string'
             ? data.reply
-            : `Chat server returned HTTP ${res.status}. For local dev: run \`npm start\` in BACKEND and \`ollama serve\` (set OLLAMA_MODEL in BACKEND/.env).`;
+            : `Chat server returned HTTP ${res.status}. Run \`npm start\` in BACKEND and set GROQ_API_KEY or GEMINI_API_KEY in BACKEND/.env.`;
         setChatMessages((prev) => [...prev, { role: 'ai', text: reply }]);
         return;
       }
@@ -554,7 +554,7 @@ function Dashboard() {
         {
           role: 'ai',
           text:
-            'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND). For chat without Ollama, set GEMINI_API_KEY in BACKEND/.env (Google AI Studio). Otherwise run Ollama or Docker (BACKEND/docker-compose.ollama.yml). In dev, Vite proxies `/chat` to port 3001.',
+            'Could not reach the Finvest AI server. Start the backend (`npm start` in BACKEND) and set GROQ_API_KEY or GEMINI_API_KEY in BACKEND/.env. In dev, Vite proxies `/chat` to port 3001.',
         },
       ]);
     } finally {
