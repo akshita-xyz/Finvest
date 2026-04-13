@@ -30,8 +30,8 @@ export function resolveProvider() {
   if (explicit === 'gemini') return 'gemini';
   if (explicit === 'groq') return 'groq';
   if (explicit !== 'auto') return 'none';
-  if (geminiApiKey()) return 'gemini';
   if (groqApiKey()) return 'groq';
+  if (geminiApiKey()) return 'gemini';
   return 'none';
 }
 
@@ -181,6 +181,6 @@ export async function generateChatReply(messages) {
   return {
     text: '',
     error:
-      'No LLM configured. Set GROQ_API_KEY or GEMINI_API_KEY in Vercel project env. With LLM_PROVIDER=auto, Gemini is used if its key is set, otherwise Groq.',
+      'No LLM configured. Set GROQ_API_KEY or GEMINI_API_KEY in Vercel project env. With LLM_PROVIDER=auto, Groq is used if GROQ_API_KEY is set, otherwise Gemini.',
   };
 }
