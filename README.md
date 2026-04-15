@@ -31,14 +31,6 @@ The product is **educational**, not personalized financial advice.
 
 ## Setup — run locally
 
-### 1. Prerequisites
-
-- [Node.js](https://nodejs.org/) (LTS, matching `FRONTEND` engines)
-- npm (comes with Node)
-- A [Supabase](https://supabase.com/) project (URL + anon key) for auth and profiles
-
-### 2. Frontend (main app)
-
 ```bash
 cd FRONTEND
 npm install
@@ -46,25 +38,6 @@ npm run dev
 ```
 
 Open the URL Vite prints (usually `http://localhost:5173`).
-
-Other useful commands:
-
-```bash
-npm run build      # production build → dist/
-npm run preview    # serve dist locally
-npm run lint       # ESLint
-```
-
-### 3. Optional: backend
-
-```bash
-cd BACKEND
-cp .env.example .env   # set SUPABASE_URL, SUPABASE_ANON_KEY, PORT, etc.
-npm install
-npm start
-```
-
-Default port is in `BACKEND/.env.example` (e.g. `3001`). 
 
 ## APIs and external services
 
