@@ -74,15 +74,10 @@ async function callClaude(userText) {
   const res = await fetch("/api/voice", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user",   content: userText },
-      ],
-    }),
+    body: JSON.stringify({ message: userText }),
   });
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
+  return data.reply || "Sorry, I couldn't process that.";
 }
 
 function normalize(str) {
@@ -250,21 +245,21 @@ export default function VoiceAssistant() {
     try { r.start(); } catch { stopListening(); }
   }, [stopListening, stopWakeListener, startWakeListener]);
 
-  const handleInput = useCallback(async (text) => {
-    if (!text.trim()) return;
-    setMessages((m) => [...m, { role: "user", text }]);
-    if (tryCommand(text)) return;
-    setThinking(true);
-    try {
-      const reply = await callClaude(text);
-      setThinking(false);
-      setMessages((m) => [...m, { role: "ai", text: reply }]);
-      speak(reply);
-    } catch {
-      setThinking(false);
-      setMessages((m) => [...m, { role: "ai", text: "Connection error. Please try again." }]);
-    }
-  }, [tryCommand, speak]);
+const handleInput = useCallback(async (text) => {
+  if (!text.trim()) return;
+  setMessages((m) => [...m, { role: "user", text }]);
+  if (tryCommand(text)) return;
+  setThinking(true);
+  try {
+    const reply = await callClaude(text);
+    setThinking(false);
+    setMessages((m) => [...m, { role: "ai", text: reply }]);
+    speak(reply);  // ✅ this must be here — speaks the reply out loud
+  } catch {
+    setThinking(false);
+    setMessages((m) => [...m, { role: "ai", text: "Connection error. Please try again." }]);
+  }
+}, [tryCommand, speak]);
 
   useEffect(() => {
     startWakeListener();
