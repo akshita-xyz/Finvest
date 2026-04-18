@@ -3,6 +3,7 @@
  * Production uses Vercel serverless; this plugin uses `apply: 'serve'` and is skipped for build.
  */
 import path from 'node:path'
+import fs from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -46,6 +47,25 @@ function attachQueryFromUrl(req) {
   req.query = q
 }
 
+/**
+ * Dev-only fresh import: appends the file's mtime to the module URL so Node's
+ * ESM loader doesn't hand back a stale cached copy after you edit api/*.js.
+ * In production (Vercel) none of this runs — each invocation is cold.
+ * @param {string} absFilePath
+ * @returns {Promise<any>}
+ */
+async function freshImport(absFilePath) {
+  let version = 't' + Date.now()
+  try {
+    const stat = fs.statSync(absFilePath)
+    version = 'v' + stat.mtimeMs
+  } catch {
+    // file missing — let the import itself surface the error
+  }
+  const url = pathToFileURL(absFilePath).href + `?${version}`
+  return import(/* @vite-ignore */ url)
+}
+
 export function finvestLocalApi() {
   return {
     name: 'finvest-local-api',
@@ -57,8 +77,8 @@ export function finvestLocalApi() {
 
           if (req.method === 'POST' && pathname === '/api/chat') {
             patchResponse(res)
-            const { default: handler } = await import(
-              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'chat.js')).href
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'chat.js')
             )
             await handler(req, res)
             return
@@ -66,8 +86,8 @@ export function finvestLocalApi() {
 
           if (req.method === 'POST' && pathname === '/api/voice') {
             patchResponse(res)
-            const { default: handler } = await import(
-              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'voice.js')).href
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'voice.js')
             )
             await handler(req, res)
             return
@@ -75,8 +95,26 @@ export function finvestLocalApi() {
 
           if (req.method === 'POST' && pathname === '/api/voice-transcribe') {
             patchResponse(res)
-            const { default: handler } = await import(
-              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'voice-transcribe.js')).href
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'voice-transcribe.js')
+            )
+            await handler(req, res)
+            return
+          }
+
+          if (req.method === 'POST' && pathname === '/api/rag-embed') {
+            patchResponse(res)
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'rag-embed.js')
+            )
+            await handler(req, res)
+            return
+          }
+
+          if (req.method === 'POST' && pathname === '/api/rag-chat') {
+            patchResponse(res)
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'rag-chat.js')
             )
             await handler(req, res)
             return
@@ -85,8 +123,8 @@ export function finvestLocalApi() {
           if (req.method === 'GET' && pathname.startsWith('/api/market/yahoo-chart')) {
             patchResponse(res)
             attachQueryFromUrl(req)
-            const { default: handler } = await import(
-              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'market', 'yahoo-chart.js')).href
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'market', 'yahoo-chart.js')
             )
             await handler(req, res)
             return

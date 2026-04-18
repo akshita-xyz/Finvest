@@ -6,7 +6,7 @@ import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolio
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Activity, Shield, TrendingUp, MessageSquare, Menu, X, Target, Zap, Sparkles, Newspaper, ExternalLink, Search, ClipboardList, Lock, Brain, ChevronRight, RotateCcw, } from 'lucide-react';
+  Activity, Shield, TrendingUp, MessageSquare, Menu, X, Target, Zap, Sparkles, Newspaper, ExternalLink, Search, ClipboardList, Lock, Brain, ChevronRight, RotateCcw, FileText, } from 'lucide-react';
 import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
 import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
@@ -125,6 +125,7 @@ function Dashboard() {
   const behaviorOverviewUnlocked = !user?.id || (profileReady && fearQuizComplete);
   const ppNavActive = location.pathname.startsWith('/personalized-portfolio');
   const goalsNavActive = location.pathname.startsWith('/financial-goals');
+  const ragNavActive = location.pathname.startsWith('/rag-contracts');
 
   useEffect(() => {
     const onHash = () => setActiveNavSection(readNavSectionFromHash());
@@ -697,10 +698,15 @@ function Dashboard() {
     <div className="db-shell">
       <aside className={`db-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="db-sidebar__header">
-          <div>
+          <Link
+            to="/"
+            className="db-brand-link"
+            aria-label="Finvest — go to home page"
+            onClick={() => setSidebarOpen(false)}
+          >
             <div className="db-brand">FINVEST</div>
             <div className="db-brand-sub">Feel the risk, master the outcome</div>
-          </div>
+          </Link>
           <button className="db-icon-btn db-mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={20} />
           </button>
@@ -774,6 +780,17 @@ function Dashboard() {
             <span className="db-nav-item__text">
               <span className="db-nav-item__title">Financial Goals</span>
               <span className="db-nav-item__sub">Future You planner</span>
+            </span>
+          </Link>
+          <Link
+            to="/rag-contracts"
+            className={`db-nav-item db-nav-item--rail${ragNavActive ? ' active' : ''}`}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <FileText size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">Contract AI</span>
+              <span className="db-nav-item__sub">RAG-powered contract review</span>
             </span>
           </Link>
           <div className="db-sidebar__nav-divider" role="presentation" />
