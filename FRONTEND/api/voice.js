@@ -1,12 +1,49 @@
 import { generateChatReply } from './_lib/llmChat.js';
 
+/**
+ * Accepts both parsed JSON body and raw request stream.
+ * @param {import('http').IncomingMessage} req
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function readJsonBody(req) {
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      return JSON.parse(req.body.toString('utf8'));
+    } catch {
+      return {};
+    }
+  }
+  if (req.body != null && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    return /** @type {Record<string, unknown>} */ (req.body);
+  }
+  if (typeof req.body === 'string') {
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      return {};
+    }
+  }
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
+  }
+  const raw = Buffer.concat(chunks).toString('utf8');
+  if (!raw.trim()) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' });
     return;
   }
 
-  const { message } = req.body;
+  const body = await readJsonBody(req);
+  const message = typeof body.message === 'string' ? body.message.trim() : '';
   if (!message) {
     res.status(400).json({ error: 'message is required' });
     return;
@@ -38,5 +75,5 @@ Tone: Professional, calm, confident.`;
     return;
   }
 
-  res.status(200).json({ reply: text });
+  res.status(200).json({ reply: text || "Sorry, I couldn't process that." });
 }

@@ -51,17 +51,8 @@ const SCROLL_COMMANDS = [
   { patterns: ["refresh", "reload", "refresh page"],                   action: () => window.location.reload() },
 ];
 
-const OPEN_COMMANDS  = ["hello finvest", "hey finvest", "hi finvest", "open finvest ai", "show assistant", "finvest ai", "ok finvest"];
+const OPEN_COMMANDS  = ["open finvest ai", "show assistant", "open assistant"];
 const CLOSE_COMMANDS = ["close assistant", "hide assistant", "close finvest ai", "goodbye finvest"];
-
-const WAKE_WORDS = [
-  "hello finvest",
-  "hey finvest",
-  "hi finvest",
-  "finvest ai",
-  "ok finvest",
-  "finvest",
-];
 
 const QUICK_CHIPS = [
   { label: "Dashboard",   q: "take me to dashboard" },
@@ -76,12 +67,48 @@ async function callClaude(userText) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: userText }),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || data?.reply || `Request failed (${res.status})`);
+  }
   return data.reply || "Sorry, I couldn't process that.";
 }
 
 function normalize(str) {
   return str.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+}
+
+function canonicalizeFinanceTranscript(str) {
+  let text = String(str || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+
+  const acronymRules = [
+    [/\bs\.?\s*i\.?\s*p\.?\b/gi, "SIP"],
+    [/\be\.?\s*t\.?\s*f\.?\b/gi, "ETF"],
+    [/\bp\.?\s*p\.?\s*f\.?\b/gi, "PPF"],
+    [/\bn\.?\s*p\.?\s*s\.?\b/gi, "NPS"],
+    [/\bm\.?\s*f\.?\b/gi, "MF"],
+  ];
+
+  for (const [pattern, replacement] of acronymRules) {
+    text = text.replace(pattern, replacement);
+  }
+
+  text = text
+    .replace(/\b(systematic investment plan)\b/gi, "SIP")
+    .replace(/\b(exchange traded fund)\b/gi, "ETF")
+    .replace(/\b(public provident fund)\b/gi, "PPF")
+    .replace(/\b(national pension scheme)\b/gi, "NPS");
+
+  text = text
+    .replace(/\bwhat is ship\b/gi, "what is SIP")
+    .replace(/\bwhat is zip\b/gi, "what is SIP")
+    .replace(/\bmutual fund ship\b/gi, "mutual fund SIP")
+    .replace(/\bmonthly ship\b/gi, "monthly SIP")
+    .replace(/\bstart ship\b/gi, "start SIP")
+    .replace(/\binvest in ship\b/gi, "invest in SIP");
+
+  return text;
 }
 
 function matchesAny(transcript, patterns) {
@@ -94,20 +121,32 @@ export default function VoiceAssistant() {
 
   const [open, setOpen]             = useState(false);
   const [messages, setMessages]     = useState([
-    { role: "ai", text: 'Hi! Say "Hello Finvest" or tap the orb to get started.' },
+    { role: "ai", text: "Hi! Tap the mic orb to start talking." },
   ]);
   const [listening, setListening]   = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [speaking, setSpeaking]     = useState(false);
   const [thinking, setThinking]     = useState(false);
   const [inputVal, setInputVal]     = useState("");
-  const [wakeActive, setWakeActive] = useState(false);
   const [toast, setToast]           = useState(null);
 
-  const chatRef        = useRef(null);
-  const recognitionRef = useRef(null);
-  const wakeRef        = useRef(null);
-  const synth          = useRef(window.speechSynthesis);
-  const toastTimer     = useRef(null);
+  const chatRef          = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef   = useRef(null);
+  const audioChunksRef   = useRef(/** @type {Blob[]} */ ([]));
+  const audioMimeRef     = useRef("audio/webm");
+  const synth            = useRef(window.speechSynthesis);
+  const toastTimer       = useRef(null);
+  const thinkingRef      = useRef(false);
+  const micGrantedRef    = useRef(false);
+  const handleInputRef   = useRef(/** @type {((text: string) => void) | null} */ (null));
+  const startListeningRef = useRef(/** @type {(() => void | Promise<void>) | null} */ (null));
+  const recordingSessionRef = useRef({
+    active: false,
+    startedAt: 0,
+    cancelled: false,
+  });
+  const recordingStopTimerRef = useRef(null);
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -128,16 +167,33 @@ export default function VoiceAssistant() {
 
   const speak = useCallback((text) => {
     const s = synth.current;
-    if (!s) return;
-    s.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-IN"; u.rate = 1.0; u.pitch = 1.0;
-    const v = s.getVoices().find((v) => v.lang === "en-IN") || s.getVoices().find((v) => v.lang.startsWith("en"));
-    if (v) u.voice = v;
-    u.onstart = () => setSpeaking(true);
-    u.onend   = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    s.speak(u);
+    if (!s || !String(text || "").trim()) return;
+    try {
+      s.cancel();
+    } catch {
+      /* ignore */
+    }
+    setTimeout(() => {
+      const engine = synth.current;
+      if (!engine) return;
+      const u = new SpeechSynthesisUtterance(String(text));
+      u.lang = "en-IN";
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      const voices = engine.getVoices();
+      const v =
+        voices.find((voice) => voice.lang === "en-IN") ||
+        voices.find((voice) => voice.lang.startsWith("en"));
+      if (v) u.voice = v;
+      u.onstart = () => setSpeaking(true);
+      u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      try {
+        engine.speak(u);
+      } catch {
+        setSpeaking(false);
+      }
+    }, 80);
   }, []);
 
   const tryCommand = useCallback((transcript) => {
@@ -174,103 +230,263 @@ export default function VoiceAssistant() {
     return false;
   }, [navigate, speak, showToast]);
 
-  const stopListening = useCallback(() => {
-    setListening(false);
-    try { recognitionRef.current?.stop(); } catch {}
+  const cleanupMediaResources = useCallback(() => {
+    clearTimeout(recordingStopTimerRef.current);
+    recordingStopTimerRef.current = null;
+    const stream = mediaStreamRef.current;
+    if (stream) {
+      try {
+        stream.getTracks().forEach((t) => {
+          try { t.stop(); } catch { /* ignore */ }
+        });
+      } catch { /* ignore */ }
+    }
+    mediaStreamRef.current = null;
+    mediaRecorderRef.current = null;
   }, []);
 
-  const stopWakeListener = useCallback(() => {
-    try { wakeRef.current?.stop(); } catch {}
-    setWakeActive(false);
-  }, []);
-
-  const startWakeListener = useCallback(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    const r = new SR();
-    r.lang = "en-IN"; r.continuous = true; r.interimResults = true;
-    r.onstart = () => setWakeActive(true);
-    r.onresult = (e) => {
-      const transcript = Array.from(e.results)
-        .map((res) => res[0].transcript)
-        .join(" ");
-      if (WAKE_WORDS.some((w) => normalize(transcript).includes(normalize(w)))) {
-        r.stop();
-        setOpen(true);
-        showToast("👋 Wake word detected!");
-        speak("Hello! Finvest AI is ready. How can I help you?");
-        setTimeout(() => startListening(), 2200);
+  const stopListening = useCallback((submit = true) => {
+    const session = recordingSessionRef.current;
+    if (!session.active) {
+      if (!submit) {
+        audioChunksRef.current = [];
+        cleanupMediaResources();
+        setListening(false);
       }
-    };
-    r.onerror = (e) => {
-      if (e.error !== "no-speech") setWakeActive(false);
-    };
-    r.onend = () => {
-      setWakeActive(false);
-      setTimeout(() => {
-        if (!recognitionRef.current) {
-          startWakeListener();
-        }
-      }, 1500);
-    };
-    wakeRef.current = r;
-    try { r.start(); } catch {}
-  }, [speak, showToast]); // startListening added via late-binding below
-
-  const startListening = useCallback(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setMessages((m) => [...m, { role: "ai", text: "Voice not supported in this browser. Please type instead." }]);
       return;
     }
-    stopWakeListener();
-    const r = new SR();
-    r.lang = "en-IN"; r.continuous = false; r.interimResults = false;
-    r.onstart  = () => setListening(true);
-    r.onresult = (e) => {
-      recognitionRef.current = null;
-      stopListening();
-      handleInput(e.results[0][0].transcript);
-    };
-    r.onerror  = () => {
-      recognitionRef.current = null;
-      stopListening();
-    };
-    r.onend    = () => {
-      recognitionRef.current = null;
-      stopListening();
-      setTimeout(startWakeListener, 800);
-    };
-    recognitionRef.current = r;
-    try { r.start(); } catch { stopListening(); }
-  }, [stopListening, stopWakeListener, startWakeListener]);
+    session.active = false;
+    session.cancelled = !submit;
+    setListening(false);
 
-const handleInput = useCallback(async (text) => {
-  if (!text.trim()) return;
-  setMessages((m) => [...m, { role: "user", text }]);
-  if (tryCommand(text)) return;
-  setThinking(true);
-  try {
-    const reply = await callClaude(text);
-    setThinking(false);
-    setMessages((m) => [...m, { role: "ai", text: reply }]);
-    speak(reply);  // ✅ this must be here — speaks the reply out loud
-  } catch {
-    setThinking(false);
-    setMessages((m) => [...m, { role: "ai", text: "Connection error. Please try again." }]);
-  }
-}, [tryCommand, speak]);
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      try {
+        recorder.stop();
+      } catch {
+        /* ignore — onstop fallback via cleanup */
+      }
+    } else {
+      audioChunksRef.current = [];
+      cleanupMediaResources();
+    }
+  }, [cleanupMediaResources]);
+
+  const transcribeAudio = useCallback(async (blob, mime) => {
+    if (!blob || blob.size < 1200) {
+      showToast("Didn't catch that. Please try again.");
+      return;
+    }
+    setTranscribing(true);
+    try {
+      const res = await fetch("/api/voice-transcribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": mime || blob.type || "audio/webm",
+          "x-language": "en",
+        },
+        body: blob,
+      });
+      const data = await res.json().catch(() => ({}));
+      setTranscribing(false);
+      if (!res.ok) {
+        const errMsg = data?.error || `Transcription failed (${res.status})`;
+        setMessages((m) => [...m, { role: "ai", text: errMsg }]);
+        return;
+      }
+      const text = canonicalizeFinanceTranscript(String(data?.text || "")).trim();
+      if (!text) {
+        showToast("Didn't catch that. Please try again.");
+        return;
+      }
+      handleInputRef.current?.(text);
+    } catch (err) {
+      setTranscribing(false);
+      const msg = err instanceof Error ? err.message : "Transcription error.";
+      setMessages((m) => [...m, { role: "ai", text: msg }]);
+    }
+  }, [showToast]);
+
+  const startListening = useCallback(async () => {
+    if (recordingSessionRef.current.active) return;
+    if (typeof window === "undefined" || typeof window.MediaRecorder === "undefined") {
+      setMessages((m) => [
+        ...m,
+        { role: "ai", text: "Audio recording is not supported in this browser. Please type instead." },
+      ]);
+      return;
+    }
+
+    try { synth.current?.cancel(); } catch { /* ignore */ }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      micGrantedRef.current = true;
+    } catch (err) {
+      micGrantedRef.current = false;
+      showToast("Microphone permission required.");
+      setMessages((m) => [
+        ...m,
+        { role: "ai", text: "Please allow microphone access in the browser, then tap the orb again." },
+      ]);
+      return;
+    }
+
+    const mimeCandidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4",
+      "audio/mpeg",
+    ];
+    let chosenMime = "";
+    for (const m of mimeCandidates) {
+      try {
+        if (window.MediaRecorder.isTypeSupported?.(m)) {
+          chosenMime = m;
+          break;
+        }
+      } catch { /* ignore */ }
+    }
+    audioMimeRef.current = chosenMime || "audio/webm";
+
+    let recorder;
+    try {
+      recorder = chosenMime
+        ? new MediaRecorder(stream, { mimeType: chosenMime })
+        : new MediaRecorder(stream);
+    } catch {
+      try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+      showToast("Could not start recorder.");
+      return;
+    }
+
+    audioChunksRef.current = [];
+    mediaStreamRef.current = stream;
+    mediaRecorderRef.current = recorder;
+    recordingSessionRef.current = {
+      active: true,
+      startedAt: Date.now(),
+      cancelled: false,
+    };
+
+    recorder.ondataavailable = (e) => {
+      if (e?.data && e.data.size > 0) {
+        audioChunksRef.current.push(e.data);
+      }
+    };
+
+    recorder.onerror = () => {
+      showToast("Recording error. Please try again.");
+      const session = recordingSessionRef.current;
+      session.active = false;
+      session.cancelled = true;
+      setListening(false);
+      audioChunksRef.current = [];
+      cleanupMediaResources();
+    };
+
+    recorder.onstop = () => {
+      const session = recordingSessionRef.current;
+      const chunks = audioChunksRef.current.slice();
+      audioChunksRef.current = [];
+      const mime = audioMimeRef.current || recorder.mimeType || "audio/webm";
+      cleanupMediaResources();
+      if (session.cancelled) return;
+      if (!chunks.length) {
+        showToast("Didn't catch that. Please try again.");
+        return;
+      }
+      const blob = new Blob(chunks, { type: mime });
+      transcribeAudio(blob, mime);
+    };
+
+    try {
+      recorder.start(250);
+      setListening(true);
+    } catch {
+      showToast("Could not start recorder.");
+      recordingSessionRef.current.active = false;
+      recordingSessionRef.current.cancelled = true;
+      try { stream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+      cleanupMediaResources();
+      return;
+    }
+
+    clearTimeout(recordingStopTimerRef.current);
+    recordingStopTimerRef.current = setTimeout(() => {
+      if (!recordingSessionRef.current.active) return;
+      showToast("Max recording length reached.");
+      stopListening(true);
+    }, 5 * 60 * 1000);
+  }, [showToast, transcribeAudio, cleanupMediaResources, stopListening]);
+
+  const handleInput = useCallback(async (text) => {
+    const cleanText = canonicalizeFinanceTranscript(text).trim();
+    if (!cleanText) return;
+    setMessages((m) => [...m, { role: "user", text: cleanText }]);
+    if (tryCommand(cleanText)) return;
+    thinkingRef.current = true;
+    setThinking(true);
+    try {
+      const reply = await callClaude(cleanText);
+      setThinking(false);
+      thinkingRef.current = false;
+      setMessages((m) => [...m, { role: "ai", text: reply }]);
+      speak(reply);
+    } catch (err) {
+      setThinking(false);
+      thinkingRef.current = false;
+      const msg = err instanceof Error ? err.message : "Connection error. Please try again.";
+      setMessages((m) => [...m, { role: "ai", text: msg }]);
+    }
+  }, [tryCommand, speak]);
+
+  handleInputRef.current = handleInput;
+  startListeningRef.current = startListening;
 
   useEffect(() => {
-    startWakeListener();
-    return () => stopWakeListener();
-  }, []); // eslint-disable-line
+    return () => {
+      stopListening(false);
+      clearTimeout(recordingStopTimerRef.current);
+      recordingStopTimerRef.current = null;
+      cleanupMediaResources();
+    };
+  }, [stopListening, cleanupMediaResources]);
 
   const toggleOrb = useCallback(() => {
-    if (speaking) { synth.current?.cancel(); setSpeaking(false); return; }
-    if (listening) { stopListening(); setTimeout(startWakeListener, 800); return; }
+    if (speaking) {
+      try {
+        synth.current?.cancel();
+      } catch {
+        /* ignore */
+      }
+      setSpeaking(false);
+      return;
+    }
+    if (listening) {
+      stopListening(true);
+      return;
+    }
     startListening();
-  }, [speaking, listening, stopListening, startListening, startWakeListener]);
+  }, [speaking, listening, stopListening, startListening]);
+
+  const handleFabClick = useCallback(() => {
+    if (open) {
+      if (listening) stopListening(false);
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+  }, [open, listening, stopListening]);
 
   const sendText = useCallback(() => {
     const v = inputVal.trim();
@@ -294,16 +510,44 @@ const handleInput = useCallback(async (text) => {
         }
         @keyframes va-toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
-        .va-wake-dot {
-          position: fixed; bottom: 80px; right: 28px; z-index: 100000;
-          display: flex; align-items: center; gap: 5px;
-          font-family: 'DM Mono', monospace; font-size: 9px; color: #2a5080;
-          letter-spacing: .08em; pointer-events: none;
+        .va-center-listening {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 100001;
+          pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          animation: va-signalFade .2s ease both;
         }
-        .va-wake-dot-circle {
-          width: 6px; height: 6px; border-radius: 50%; background: #4a9eff;
-          animation: va-dotPulse 2s ease-in-out infinite;
-          box-shadow: 0 0 5px 2px rgba(74,158,255,0.5);
+        .va-center-ring {
+          width: 108px;
+          height: 108px;
+          border-radius: 50%;
+          border: 2px solid rgba(74, 158, 255, 0.7);
+          box-shadow: 0 0 28px rgba(74, 158, 255, 0.6);
+          animation: va-listenPulse .9s ease-in-out infinite;
+          position: relative;
+          background: radial-gradient(circle at 35% 30%, rgba(126,207,255,0.35), rgba(26,143,255,0.12) 55%, rgba(0,81,195,0));
+        }
+        .va-center-ring::before {
+          content: '';
+          position: absolute;
+          inset: -16px;
+          border-radius: 50%;
+          border: 1.5px solid rgba(74, 158, 255, 0.35);
+          animation: va-haloRing 1.5s ease-in-out infinite;
+        }
+        .va-center-label {
+          font-family: 'DM Mono', monospace;
+          font-size: 11px;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+          color: #7ecfff;
+          text-shadow: 0 0 12px rgba(74, 158, 255, 0.55);
         }
 
         .va-fab {
@@ -390,6 +634,24 @@ const handleInput = useCallback(async (text) => {
         .va-status.active   { color:#4a9eff; }
         .va-status.speaking { color:#7ecfff; }
 
+        .va-live-transcript {
+          margin: 4px 18px 0;
+          padding: 6px 10px;
+          max-width: 300px;
+          font-family: 'Inter', sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #b8c8e0;
+          background: rgba(74,158,255,0.08);
+          border: 1px solid rgba(74,158,255,0.18);
+          border-radius: 8px;
+          text-align: center;
+          min-height: 28px;
+          max-height: 60px;
+          overflow-y: auto;
+          word-break: break-word;
+        }
+
         .va-chat { margin:0 14px; background:#0a1020; border:1px solid rgba(74,158,255,.1); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px; height:160px; overflow-y:auto; scroll-behavior:smooth; }
         .va-chat::-webkit-scrollbar{width:3px} .va-chat::-webkit-scrollbar-thumb{background:rgba(74,158,255,.2);border-radius:2px}
         .va-msg { display:flex; flex-direction:column; gap:2px; animation:va-msgIn .25s ease both; }
@@ -429,14 +691,15 @@ const handleInput = useCallback(async (text) => {
         @keyframes va-barAnim      {0%,100%{transform:scaleY(.3);opacity:.4}50%{transform:scaleY(1);opacity:1}}
         @keyframes va-msgIn        {from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
         @keyframes va-dotBounce    {0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
+        @keyframes va-signalFade   {from{opacity:0}to{opacity:1}}
       `}</style>
 
       {toast && <div className="va-toast">{toast}</div>}
 
-      {wakeActive && !open && (
-        <div className="va-wake-dot">
-          <div className="va-wake-dot-circle" />
-          
+      {listening && (
+        <div className="va-center-listening">
+          <div className="va-center-ring" />
+          <div className="va-center-label">Listening...</div>
         </div>
       )}
 
@@ -444,7 +707,7 @@ const handleInput = useCallback(async (text) => {
 
       <button
         className={`va-fab${open ? " is-open" : ""}${listening ? " is-listening" : ""}${speaking ? " is-speaking" : ""}`}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleFabClick}
         aria-label="Finvest Voice Assistant"
       >
         <span className="va-fab-icon">{open ? "✕" : "🎙️"}</span>
@@ -460,14 +723,23 @@ const handleInput = useCallback(async (text) => {
             </div>
             <div className="va-brand-sub">Voice · Finance Assistant</div>
           </div>
-          <button className="va-x-btn" onClick={() => setOpen(false)}>✕</button>
+          <button
+            type="button"
+            className="va-x-btn"
+            onClick={() => {
+              if (listening) stopListening(false);
+              setOpen(false);
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         <div className="va-hint">
-          <span className="va-hint-item"><span>"Hello Finvest"</span> → wake</span>
           <span className="va-hint-item"><span>"Go to dashboard"</span></span>
           <span className="va-hint-item"><span>"Scroll down"</span></span>
           <span className="va-hint-item"><span>"Go back"</span></span>
+          <span className="va-hint-item"><span>"Close assistant"</span></span>
         </div>
 
         <div className="va-orb-wrap">
@@ -482,7 +754,15 @@ const handleInput = useCallback(async (text) => {
             {[...Array(10)].map((_, i) => <div key={i} className="va-bar" />)}
           </div>
           <div className={`va-status${listening ? " active" : speaking ? " speaking" : ""}`}>
-            {listening ? "Listening…" : speaking ? "Speaking…" : thinking ? "Thinking…" : "Tap orb to speak"}
+            {listening
+              ? "Recording… (tap orb to stop)"
+              : transcribing
+              ? "Transcribing…"
+              : speaking
+              ? "Speaking…"
+              : thinking
+              ? "Thinking…"
+              : "Tap orb to speak"}
           </div>
         </div>
 
@@ -524,7 +804,7 @@ const handleInput = useCallback(async (text) => {
           <button className="va-send-btn" onClick={sendText}>➤</button>
         </div>
 
-        <div className="va-note"> Not financial advice · Say "Hello Finvest" anytime to wake me</div>
+        <div className="va-note"> Not financial advice · Tap the mic to start speaking</div>
       </div>
     </>
   );

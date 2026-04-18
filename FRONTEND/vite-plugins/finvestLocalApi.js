@@ -64,6 +64,24 @@ export function finvestLocalApi() {
             return
           }
 
+          if (req.method === 'POST' && pathname === '/api/voice') {
+            patchResponse(res)
+            const { default: handler } = await import(
+              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'voice.js')).href
+            )
+            await handler(req, res)
+            return
+          }
+
+          if (req.method === 'POST' && pathname === '/api/voice-transcribe') {
+            patchResponse(res)
+            const { default: handler } = await import(
+              pathToFileURL(path.join(FRONTEND_ROOT, 'api', 'voice-transcribe.js')).href
+            )
+            await handler(req, res)
+            return
+          }
+
           if (req.method === 'GET' && pathname.startsWith('/api/market/yahoo-chart')) {
             patchResponse(res)
             attachQueryFromUrl(req)
