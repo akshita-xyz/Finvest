@@ -186,7 +186,7 @@ export default function RagContracts() {
       }
       setText(extracted);
 
-      setStatus({ kind: 'info', busy: true, message: 'Splitting the contract into chunks…', progress: 55 });
+      setStatus({ kind: 'info', busy: true, message: 'Analyzing the contract…', progress: 55 });
       const split = splitText(extracted, { chunkSize: 500, overlap: 100 });
       if (!split.length) {
         setStatus({ kind: 'err', message: 'Could not split the contract into chunks.' });
@@ -197,7 +197,7 @@ export default function RagContracts() {
       setStatus({
         kind: 'info',
         busy: true,
-        message: `Embedding ${split.length} chunks with Gemini…`,
+        message: 'Indexing the contract for fast lookup…',
         progress: 70,
       });
       const embeddings = await embedTexts(split);
@@ -205,12 +205,12 @@ export default function RagContracts() {
       setStore(nextStore);
       setStatus({
         kind: 'ok',
-        message: `Ready. Indexed ${split.length} chunks from ${selected.name}. Ask me anything about the contract.`,
+        message: `Ready. Ask me anything about ${selected.name}.`,
       });
       setMessages([
         {
           role: 'system',
-          text: `${selected.name} indexed. Top-4 most relevant clauses are retrieved for every question.`,
+          text: `${selected.name} is ready. Ask any question about the contract.`,
         },
       ]);
     } catch (err) {
