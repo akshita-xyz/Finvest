@@ -1,0 +1,1 @@
+export { default } from '../FRONTEND/api/voice.js';
