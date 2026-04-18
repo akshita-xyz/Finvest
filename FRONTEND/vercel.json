@@ -10,16 +10,5 @@
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
-  ],
-  "experimentalServices": {
-    "frontend": {
-      "entrypoint": "FRONTEND",
-      "routePrefix": "/",
-      "framework": "vite"
-    },
-    "backend": {
-      "entrypoint": "BACKEND",
-      "routePrefix": "/_/backend"
-    }
-  }
+  ]
 }
