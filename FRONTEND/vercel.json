@@ -1,9 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "buildCommand": "cd FRONTEND && npm install && npm run build",
+  "outputDirectory": "FRONTEND/dist",
+  "installCommand": "cd FRONTEND && npm install",
   "cleanUrls": false,
   "trailingSlash": false,
   "rewrites": [
@@ -11,5 +10,16 @@
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "FRONTEND",
+      "routePrefix": "/",
+      "framework": "vite"
+    },
+    "backend": {
+      "entrypoint": "BACKEND",
+      "routePrefix": "/_/backend"
+    }
+  }
 }

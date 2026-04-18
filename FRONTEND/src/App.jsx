@@ -10,6 +10,7 @@ import AccountPage from './pages/AccountPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PersonalizedPortfolioHub from './pages/PersonalizedPortfolioHub';
 import FinancialGoals from './pages/FinancialGoals';
+import VoiceAssistant from "./components/VoiceAssistant";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
       />
       <Route path="/financial-goals" element={<FinancialGoals />} />
     </Routes>
+    <VoiceAssistant />
     </>
   );
 }
