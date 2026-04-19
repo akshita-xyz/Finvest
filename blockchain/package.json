@@ -10,7 +10,9 @@
     "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
     "env:sync": "node scripts/sync-frontend-env.js",
+    "env:sync:sepolia": "node scripts/sync-frontend-env.js sepolia",
     "cert:auto-local": "node scripts/run-local-cert-stack.js",
+    "cert:auto-sepolia": "hardhat run scripts/deploy.js --network sepolia && node scripts/sync-frontend-env.js sepolia",
     "cert:issue": "hardhat run scripts/issue-cert.js"
   },
   "devDependencies": {

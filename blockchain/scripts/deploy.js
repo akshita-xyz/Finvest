@@ -33,7 +33,10 @@ async function main() {
   console.log('Wrote', file);
 
   console.log('\nFinvestCertRegistry deployed to:', registry.address);
-  console.log('Run: node scripts/sync-frontend-env.js  (writes FRONTEND/.env)');
+  if (hre.network.name === 'sepolia') {
+    console.log('Sepolia explorer: https://sepolia.etherscan.io/address/' + registry.address);
+  }
+  console.log('Run: node scripts/sync-frontend-env.js ' + hre.network.name + '  (writes FRONTEND/.env)');
   console.log('FRONTEND .env lines:');
   console.log('  VITE_CERT_REGISTRY_ADDRESS=' + registry.address);
   console.log('  VITE_CERT_REGISTRY_RPC_URL=' + (out.rpcUrl || '(set your RPC for this network)'));

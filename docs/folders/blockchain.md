@@ -57,7 +57,18 @@ There are no transfers, no approvals, no metadata server, no upgrade proxy. Ever
 | `npm run deploy:sepolia` | Same for Sepolia |
 | `npm run env:sync` | Reads `deployments/<network>.json` and merges `VITE_CERT_REGISTRY_ADDRESS`, `VITE_CERT_REGISTRY_RPC_URL`, `CERT_REGISTRY_ADDRESS`, `CERT_REGISTRY_RPC_URL` into `FRONTEND/.env` |
 | `npm run cert:auto-local` | One-shot: spawns `hardhat node` in the background, waits for port 8545, deploys, syncs env. Cross-platform (Node ≥18). |
+| `npm run cert:auto-sepolia` | One-shot: deploys to Sepolia using `SEPOLIA_RPC_URL` + `DEPLOYER_PRIVATE_KEY`, then syncs `FRONTEND/.env`. The browser RPC is set to a public no-auth endpoint so your Alchemy key is never shipped to clients. |
+| `npm run env:sync:sepolia` | Re-sync `FRONTEND/.env` from `deployments/sepolia.json` (use `PUBLIC_RPC_URL=...` to override the public RPC). |
 | `npm run cert:issue --network <net>` | Hashes a JSON file (`CERT_FILE=...`) and publishes its hash via `issue()` |
+
+### RPC URL split (important for production)
+
+`VITE_CERT_REGISTRY_RPC_URL` is bundled into the browser. If you point it at your Alchemy/Infura URL, the API key leaks to every visitor. The sync script therefore writes:
+
+- `VITE_CERT_REGISTRY_RPC_URL` → public no-auth endpoint (default `https://ethereum-sepolia-rpc.publicnode.com`)
+- `CERT_REGISTRY_RPC_URL` → server-side only, can be your private Alchemy/Infura URL
+
+Override the public default with `PUBLIC_RPC_URL=https://... npm run env:sync:sepolia` if you want a different public RPC.
 
 After running `cert:auto-local`, **paste a prefunded Hardhat private key** into `FRONTEND/.env` as `CERT_ISSUER_PRIVATE_KEY=0x...`. That's the wallet `/api/cert-issue` uses to sign issuance transactions. (On localhost, any of the 20 accounts that `npx hardhat node` prints will do — they each hold 10 000 fake ETH.)
 
