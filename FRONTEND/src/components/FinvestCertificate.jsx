@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import '../styles/finvest-certificate.css';
 
 /**
@@ -12,6 +13,7 @@ import '../styles/finvest-certificate.css';
  *   finePrint?: string;
  *   compact?: boolean;
  *   className?: string;
+ *   verifyUrl?: string;
  * }} props
  */
 export function FinvestCertificate({
@@ -23,6 +25,7 @@ export function FinvestCertificate({
   finePrint,
   compact = false,
   className = '',
+  verifyUrl = '',
 }) {
   const headline =
     variant === 'decode'
@@ -61,12 +64,24 @@ export function FinvestCertificate({
           ))}
         </ul>
       ) : null}
-      <div className="finvest-cert-footer">
+      <div className={`finvest-cert-footer${verifyUrl ? ' finvest-cert-footer--with-qr' : ''}`}>
         <div className="finvest-cert-sig">
           <strong>Finvest</strong>
           <br />
           Learning &amp; simulation platform
         </div>
+        {verifyUrl ? (
+          <div className="finvest-cert-qr" aria-label="Scan to verify on chain">
+            <QRCodeSVG
+              value={verifyUrl}
+              size={compact ? 56 : 84}
+              level="M"
+              bgColor="#fffef8"
+              fgColor="#1a2744"
+            />
+            <span className="finvest-cert-qr-label">Scan to verify</span>
+          </div>
+        ) : null}
         <div className="finvest-cert-sig">
           Issued
           <br />

@@ -44,6 +44,13 @@ function pickFilename(mime) {
   return 'audio.webm';
 }
 
+/** Strip "; codecs=..." params; Groq Whisper prefers the bare MIME. */
+function bareMime(mime) {
+  const raw = String(mime || '').toLowerCase().split(';')[0].trim();
+  if (raw.startsWith('audio/')) return raw;
+  return 'audio/webm';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' });
@@ -79,8 +86,24 @@ export default async function handler(req, res) {
     return;
   }
 
-  const contentType = req.headers['content-type'] || 'audio/webm';
-  const filename = pickFilename(contentType);
+  // ~1 KB threshold — anything smaller is silence / a misfired recorder, and Groq returns
+  // "could not process file" instead of a useful empty-text response.
+  if (audioBuffer.length < 1024) {
+    res
+      .status(400)
+      .json({ error: 'Recording too short to transcribe. Hold the mic for at least half a second.' });
+    return;
+  }
+
+  const rawCt = req.headers['content-type'] || 'audio/webm';
+  const cleanMime = bareMime(rawCt);
+  const filename = pickFilename(cleanMime);
+
+  // Node 20+ exposes File globally; fall back to Blob if it's not available for any reason.
+  const FileCtor = typeof File !== 'undefined' ? File : null;
+  const audioPart = FileCtor
+    ? new FileCtor([audioBuffer], filename, { type: cleanMime })
+    : new Blob([audioBuffer], { type: cleanMime });
 
   const form = new FormData();
   form.append('model', model);
@@ -89,11 +112,7 @@ export default async function handler(req, res) {
   const langHeader = String(req.headers['x-language'] || 'en').trim();
   if (langHeader) form.append('language', langHeader);
   form.append('prompt', 'Finance conversation. Terms like SIP, ETF, PPF, NPS, mutual fund, portfolio, stocks.');
-  form.append(
-    'file',
-    new Blob([audioBuffer], { type: contentType }),
-    filename
-  );
+  form.append('file', audioPart, filename);
 
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {

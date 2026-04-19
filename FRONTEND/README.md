@@ -40,7 +40,7 @@ These run as **server** code: secrets use `process.env` **without** the `VITE_` 
 
 - `src/pages/` — routes (e.g. `Dashboard`, `LandingPage`)
 - `src/components/` — shared UI
-- `src/lib/` — client logic, ML adapters, quiz engines
+- `src/lib/` — client logic and quiz/simulation engines
 - `api/` — serverless handlers for this package’s deploy root
 
-For monorepo-wide context and backend fallback, see the repository root [`README.md`](../README.md).
+For monorepo-wide context, see the repository root [`README.md`](../README.md).

@@ -6,7 +6,7 @@ alwaysApply: true
 # Finvest local Supabase
 
 - **Frontend**: `FRONTEND/.env` — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- **Backend**: `BACKEND/.env` — `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+- **Server-side fallbacks** (same `FRONTEND/.env`): optional `SUPABASE_URL`, `SUPABASE_ANON_KEY` for the serverless functions in `FRONTEND/api/`
 
 These files are **gitignored**. The project URL is `https://xcrbtlqbbennnkmzdobk.supabase.co` (ref `xcrbtlqbbennnkmzdobk`). When Supabase env vars are needed for local dev or docs, read from those `.env` files in the workspace instead of asking the user to paste keys.
 

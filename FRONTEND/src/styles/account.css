@@ -303,6 +303,87 @@
   color: #fffbeb;
 }
 
+.account-nft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.account-nft-verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--M);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.22));
+  color: #c5cef5;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+}
+
+.account-nft-verify-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+  border-color: rgba(167, 139, 250, 0.85);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.account-nft-verify-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.account-nft-verify-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.7rem;
+  color: #fca5a5;
+}
+
+.account-nft-chain-hint {
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.35);
+  font-size: 0.75rem;
+  color: #cbd5f5;
+  line-height: 1.55;
+}
+
+.account-nft-chain-hint code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin: 0 1px;
+}
+
+.auth-card--account .account-nft-verify-btn {
+  border-color: rgba(99, 102, 241, 0.55);
+  color: #4338ca;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.1));
+}
+
+.auth-card--account .account-nft-verify-btn:hover:not(:disabled) {
+  color: #312e81;
+}
+
+.auth-card--account .account-nft-chain-hint {
+  background: rgba(241, 245, 249, 0.6);
+  color: #475569;
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
 .account-nft-card-head {
   display: flex;
   align-items: center;

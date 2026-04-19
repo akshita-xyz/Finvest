@@ -17,15 +17,15 @@ Many first-time investors **under-save or avoid markets** because downside feels
 | UI | React, Vite, Tailwind CSS, Framer Motion, Lucide |
 | Charts | Recharts, TradingView Lightweight Charts |
 | Auth / data | Supabase (PostgreSQL + Auth) |
-| ML / logic | TypeScript/JavaScript modules under `ML/` and `FRONTEND/src/lib/` |
+| ML / logic | Pure-JS modules under `FRONTEND/src/lib/` (fear score, persona, Monte Carlo) |
 | LLM | Groq (OpenAI-compatible) and/or Google Gemini via `FRONTEND/api/chat.js` |
-| Optional API | Express in `BACKEND/` |
+| Serverless | Node handlers under `FRONTEND/api/` (chat, RAG, voice, Yahoo chart proxy) |
 
 ## Feature areas (high level)
 
 - **Onboarding & quizzes** — Emotional readiness pillars; timed “Decode Your Finance Self” assessment; fear score and cluster assignment.
 - **Dashboard** — Risk sandbox, market-aware widgets, behavioral sections; chat when LLM env is configured.
-- **Simulation** — Scenario and path visualizations (see `ML/` and dashboard components).
+- **Simulation** — Scenario and path visualizations (see `FRONTEND/src/lib/financialGoalsLogic.js` and dashboard components).
 
 Exact scoring for quizzes is specified in [`QUIZ_CALCULATIONS.md`](QUIZ_CALCULATIONS.md).
 
@@ -36,10 +36,5 @@ cd FRONTEND && npm install && npm run dev
 ```
 
 ```bash
-cd BACKEND && npm install && npm start
-```
-
-```bash
-# Production build (from frontend)
 cd FRONTEND && npm run build
 ```

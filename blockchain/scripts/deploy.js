@@ -7,9 +7,9 @@ async function main() {
   console.log('Deploying with:', deployer.address);
   console.log('Network:', hre.network.name, 'chainId:', (await hre.ethers.provider.getNetwork()).chainId);
 
-  const BadgeNFT = await hre.ethers.getContractFactory('BadgeNFT');
-  const badge = await BadgeNFT.deploy();
-  await badge.deployed();
+  const Registry = await hre.ethers.getContractFactory('FinvestCertRegistry');
+  const registry = await Registry.deploy();
+  await registry.deployed();
 
   const chainId = (await hre.ethers.provider.getNetwork()).chainId;
   const rpcUrl =
@@ -18,7 +18,7 @@ async function main() {
       : hre.network.config.url || '';
 
   const out = {
-    contractAddress: badge.address,
+    contractAddress: registry.address,
     network: hre.network.name,
     chainId: Number(chainId),
     rpcUrl,
@@ -32,10 +32,14 @@ async function main() {
   fs.writeFileSync(file, JSON.stringify(out, null, 2), 'utf8');
   console.log('Wrote', file);
 
-  console.log('\nBadgeNFT deployed to:', badge.address);
-  console.log('Run: npm run env:sync --workspace finvest-blockchain (from repo root) or: node blockchain/scripts/sync-frontend-env.js');
-  console.log('FRONTEND .env lines:\n  VITE_BADGE_NFT_CONTRACT_ADDRESS=' + badge.address);
-  console.log('  VITE_NFT_RPC_URL=' + (out.rpcUrl || '(set your RPC for this network)'));
+  console.log('\nFinvestCertRegistry deployed to:', registry.address);
+  console.log('Run: node scripts/sync-frontend-env.js  (writes FRONTEND/.env)');
+  console.log('FRONTEND .env lines:');
+  console.log('  VITE_CERT_REGISTRY_ADDRESS=' + registry.address);
+  console.log('  VITE_CERT_REGISTRY_RPC_URL=' + (out.rpcUrl || '(set your RPC for this network)'));
+  console.log('  CERT_REGISTRY_ADDRESS=' + registry.address + '   # server-side mirror');
+  console.log('  CERT_REGISTRY_RPC_URL=' + (out.rpcUrl || '...') + '   # server-side mirror');
+  console.log('  CERT_ISSUER_PRIVATE_KEY=<deployer private key>   # server-only, used by /api/cert-issue');
 }
 
 main().catch((e) => {

@@ -37,7 +37,7 @@ function readNavSectionFromHash() {
   return 'risk-sandbox';
 }
 
-/** Same-origin `POST /api/chat`: Vercel serverless in prod; local `npm run dev` runs it via vite-plugins/finvestLocalApi.js (no BACKEND). */
+/** Same-origin `POST /api/chat`: Vercel serverless in prod; local `npm run dev` runs it via vite-plugins/finvestLocalApi.js. */
 const CHAT_URL = apiUrl('/api/chat');
 
 function displayNameForAi(user) {

@@ -7,6 +7,10 @@
   --cert-ink-soft: #3d4f6f;
   --cert-paper: linear-gradient(165deg, #fffef8 0%, #f5f0e6 45%, #ebe4d8 100%);
   position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  aspect-ratio: 1.55 / 1;
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--cert-ink);
   background: var(--cert-paper);
@@ -15,12 +19,15 @@
   box-shadow:
     0 0 0 1px rgba(184, 134, 11, 0.35),
     0 12px 40px rgba(26, 39, 68, 0.18);
-  padding: 1.75rem 1.5rem 1.5rem;
+  padding: 1.5rem 2rem 1.25rem;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .finvest-cert--compact {
-  padding: 1.1rem 1rem 1rem;
+  padding: 0.95rem 1.1rem 0.85rem;
+  aspect-ratio: 1.6 / 1;
   box-shadow: 0 4px 18px rgba(26, 39, 68, 0.12);
 }
 
@@ -177,14 +184,19 @@
 }
 
 .finvest-cert-footer {
-  margin-top: 0.85rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1rem;
+  gap: 1.25rem;
   font-family: system-ui, sans-serif;
   font-size: 0.62rem;
   color: var(--cert-ink-soft);
+}
+
+.finvest-cert-footer--with-qr {
+  align-items: center;
 }
 
 .finvest-cert-sig {
@@ -192,6 +204,10 @@
   border-top: 1px solid rgba(184, 134, 11, 0.45);
   padding-top: 0.35rem;
   text-align: center;
+}
+
+.finvest-cert-footer--with-qr .finvest-cert-sig {
+  align-self: flex-end;
 }
 
 .finvest-cert-fine {
@@ -227,7 +243,7 @@
 
 .finvest-cert-modal-panel {
   position: relative;
-  width: min(420px, 100%);
+  width: min(760px, 100%);
   max-height: min(92vh, 720px);
   overflow: auto;
   padding-top: 0.35rem;
@@ -311,3 +327,58 @@
     max-height: none;
   }
 }
+
+.finvest-cert-qr {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 5px;
+  background: #fffef8;
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(26, 39, 68, 0.08);
+  align-self: flex-end;
+}
+
+.finvest-cert--compact .finvest-cert-qr {
+  padding: 4px 5px 3px;
+}
+
+.finvest-cert-qr svg {
+  display: block;
+}
+
+.finvest-cert-qr-label {
+  font-family: system-ui, sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cert-ink-soft, #3d4f6f);
+}
+
+.finvest-cert--compact .finvest-cert-qr-label {
+  font-size: 7px;
+}
+
+@media (max-width: 480px) {
+  .finvest-cert {
+    aspect-ratio: auto;
+    padding: 1.25rem 1rem 1rem;
+  }
+  .finvest-cert--compact {
+    aspect-ratio: auto;
+  }
+  .finvest-cert-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .finvest-cert-qr {
+    align-self: center;
+  }
+}
+
+ 
+ 

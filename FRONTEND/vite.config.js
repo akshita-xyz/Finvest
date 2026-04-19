@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     // Expose legacy non-VITE env names used elsewhere in this repo so hosted and local auth
     // still work even when Supabase/Finnhub vars were entered under the backend-style names.
     envPrefix: ['VITE_', 'FINNHUB_', 'SUPABASE_'],
-    // finvestLocalApi runs POST /api/chat + GET /api/market/* inside Vite (no BACKEND). Must run before react().
+    // finvestLocalApi runs POST /api/chat + GET /api/market/* inside Vite. Must run before react().
     plugins: [finvestLocalApi(), react()],
     server: {
       proxy: {

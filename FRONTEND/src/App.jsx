@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PersonalizedPortfolioHub from './pages/PersonalizedPortfolioHub';
 import FinancialGoals from './pages/FinancialGoals';
 import RagContracts from './pages/RagContracts';
+import VerifyCertificate from './pages/VerifyCertificate';
 import VoiceAssistant from "./components/VoiceAssistant";
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
       />
       <Route path="/financial-goals" element={<FinancialGoals />} />
       <Route path="/rag-contracts" element={<RagContracts />} />
+      <Route path="/verify" element={<VerifyCertificate />} />
     </Routes>
     <VoiceAssistant />
     </>

@@ -1,5 +1,5 @@
 /**
- * Dev-only: run FRONTEND/api/*.js handlers inside Vite so `npm run dev` works without BACKEND.
+ * Dev-only: run FRONTEND/api/*.js handlers inside Vite so `npm run dev` exposes /api/* identically to Vercel.
  * Production uses Vercel serverless; this plugin uses `apply: 'serve'` and is skipped for build.
  */
 import path from 'node:path'
@@ -115,6 +115,15 @@ export function finvestLocalApi() {
             patchResponse(res)
             const { default: handler } = await freshImport(
               path.join(FRONTEND_ROOT, 'api', 'rag-chat.js')
+            )
+            await handler(req, res)
+            return
+          }
+
+          if (req.method === 'POST' && pathname === '/api/cert-issue') {
+            patchResponse(res)
+            const { default: handler } = await freshImport(
+              path.join(FRONTEND_ROOT, 'api', 'cert-issue.js')
             )
             await handler(req, res)
             return

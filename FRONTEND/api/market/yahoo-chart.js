@@ -1,5 +1,5 @@
 /**
- * Vercel Serverless Function: mirrors BACKEND GET /api/market/yahoo-chart.
+ * Vercel Serverless Function: GET /api/market/yahoo-chart.
  * Fetches Yahoo chart JSON server-side (no browser CORS) for production SPA.
  */
 

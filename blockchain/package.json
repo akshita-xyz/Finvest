@@ -2,7 +2,7 @@
   "name": "finvest-blockchain",
   "private": true,
   "version": "1.0.0",
-  "description": "Finvest achievement NFT (ERC-721) — from code/swagat branch, extended for production mint control",
+  "description": "Finvest certificate registry — keccak256 hashes of issued certificates pinned on-chain so anyone can verify authenticity.",
   "scripts": {
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js",
@@ -10,7 +10,8 @@
     "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
     "env:sync": "node scripts/sync-frontend-env.js",
-    "badge:auto-local": "node scripts/run-local-badge-stack.js"
+    "cert:auto-local": "node scripts/run-local-cert-stack.js",
+    "cert:issue": "hardhat run scripts/issue-cert.js"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",

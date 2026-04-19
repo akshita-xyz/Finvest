@@ -30,12 +30,7 @@ function buildYahooChartUrls(symbol, range, interval) {
   const path = `/v8/finance/chart/${encodeURIComponent(sym)}?range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
   const qs = `symbol=${encodeURIComponent(sym)}&range=${encodeURIComponent(rangeSafe)}&interval=${encodeURIComponent(intervalSafe)}`;
   const urls = [];
-  const backend = import.meta.env.VITE_BACKEND_URL;
-  if (backend) {
-    const base = String(backend).replace(/\/$/, '');
-    urls.push(`${base}/api/market/yahoo-chart?${qs}`);
-  }
-  // Dev: prefer direct Yahoo proxy (fast). Then same-origin /api (Vite → BACKEND if running).
+  // Dev: prefer direct Yahoo proxy (fast) configured in vite.config.js.
   if (import.meta.env.DEV) {
     urls.push(`/__yahoo${path}`);
   }

@@ -278,8 +278,8 @@ export default function AccountPage() {
           <section className="account-panel">
             <ProfileNftCertificates
               recipientName={displayNameFromUser(user)}
+              userId={user?.id}
               dashboardPrefs={profileRow?.dashboard_prefs}
-              walletFromMetadata={String(user.user_metadata?.wallet_address || '')}
             />
           </section>
 
