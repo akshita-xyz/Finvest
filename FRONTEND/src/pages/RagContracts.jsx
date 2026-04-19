@@ -342,7 +342,7 @@ export default function RagContracts() {
           <p className="rag-hero__desc">
             Upload any PDF contract and chat with it like a friend. Finvest extracts the text,
             chunks and embeds every clause, retrieves the most relevant passages for your
-            question, and uses Groq to explain what each clause really means, automatically
+            question, and uses AI to explain what each clause really means, automatically
             flagging risks, costs, deadlines, and restrictions.
           </p>
           <div className="rag-stats" aria-live="polite">

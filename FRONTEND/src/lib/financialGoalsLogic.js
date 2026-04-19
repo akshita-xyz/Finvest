@@ -100,7 +100,11 @@ export function monteCarloProfitProbability({
     }
     if (w > contributed) wins += 1;
   }
-  return (wins / simulations) * 100;
+  const raw = (wins / simulations) * 100;
+  // Cap displayed probability so it never reads as 100%.
+  // Any raw value in [95, 100] is linearly compressed into [95, 98].
+  if (raw >= 95) return 95 + (raw - 95) * 0.6;
+  return raw;
 }
 
 /** Build three default paths; optional overrides from market data. */
