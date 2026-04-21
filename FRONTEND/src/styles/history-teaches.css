@@ -1,0 +1,274 @@
+.history-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+  color: #0f172a;
+  padding: 32px 20px 56px;
+}
+
+.history-hero {
+  max-width: 980px;
+  margin: 0 auto 24px;
+}
+
+.history-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.history-hero h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+
+.history-subtitle {
+  max-width: 760px;
+  margin: 10px 0 16px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.history-back-link {
+  display: inline-block;
+  text-decoration: none;
+  background: #2563eb;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.history-grid {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.history-card {
+  background: #ffffff;
+  border: 1px solid #dbe7f6;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.history-state {
+  max-width: 980px;
+  margin: 0 auto 14px;
+  color: #334155;
+}
+
+.history-state--error {
+  color: #b91c1c;
+}
+
+.history-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.history-card-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.history-card-head p {
+  margin: 3px 0 0;
+  color: #2563eb;
+  font-size: 0.9rem;
+}
+
+.history-trend {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.history-trend.up {
+  color: #15803d;
+}
+
+.history-trend.down {
+  color: #b91c1c;
+}
+
+.history-summary {
+  margin: 10px 0 14px;
+  color: #334155;
+  line-height: 1.55;
+}
+
+.history-card h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #1e3a8a;
+}
+
+.history-card ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
+.history-card--chart {
+  grid-column: span 1;
+  min-height: 390px;
+}
+
+.history-chart-wrap {
+  margin-top: 10px;
+}
+
+.history-card--analysis {
+  grid-column: 1 / -1;
+}
+
+
+.history-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.history-analysis-item {
+  border: 1px solid #dbe7f6;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.history-analysis-item h3 {
+  margin-bottom: 6px;
+}
+
+.history-analysis-item p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+
+.history-event-compare {
+  margin-top: 10px;
+  border-top: 1px dashed #dbe7f6;
+  padding-top: 10px;
+}
+
+.history-event-compare h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.history-mini-roadmap {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.history-mini-roadmap-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #dbe7f6;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #f8fbff;
+}
+
+.history-mini-roadmap-item span {
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.history-mini-roadmap-item strong {
+  font-size: 0.8rem;
+}
+
+.history-mini-roadmap-item strong.up {
+  color: #15803d;
+}
+
+.history-mini-roadmap-item strong.down {
+  color: #b91c1c;
+}
+
+.history-event-compare p {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.history-event-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.history-event-item {
+  border: 1px solid #dbe7f6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #f8fbff;
+  display: grid;
+  gap: 2px;
+}
+
+.history-event-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1e3a8a;
+}
+
+.history-event-item strong {
+  font-size: 0.95rem;
+}
+
+.history-event-item strong.up {
+  color: #15803d;
+}
+
+.history-event-item strong.down {
+  color: #b91c1c;
+}
+
+.history-event-item small {
+  color: #475569;
+  line-height: 1.35;
+}
+
+.history-ai-insight {
+  margin-top: 10px;
+  border-left: 3px solid #60a5fa;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1080px) {
+  .history-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 740px) {
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+}

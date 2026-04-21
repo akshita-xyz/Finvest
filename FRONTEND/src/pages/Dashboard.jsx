@@ -6,7 +6,7 @@ import { getPersonalizedPortfolioResumePath } from '../lib/personalizedPortfolio
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Activity, Shield, TrendingUp, MessageSquare, Menu, X, Target, Zap, Sparkles, Newspaper, ExternalLink, Search, ClipboardList, Lock, Brain, ChevronRight, RotateCcw, FileText, } from 'lucide-react';
+  Activity, Shield, TrendingUp, MessageSquare, Menu, X, Target, Zap, Sparkles, Newspaper, ExternalLink, Search, ClipboardList, Lock, Brain, ChevronRight, RotateCcw, FileText, BookOpen, Maximize2, Minimize2, } from 'lucide-react';
 import { ResponsiveContainer, PieChart as ChartPie, Pie, Cell, Tooltip } from 'recharts';
 import '../styles/dashboard.css';
 import { fetchFinnhub52WeekMetric, fetchYahooChartCandles } from '../lib/marketChartData';
@@ -88,6 +88,7 @@ function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNavSection, setActiveNavSection] = useState(readNavSectionFromHash);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatFullscreen, setChatFullscreen] = useState(false);
   const [chatMessages, setChatMessages] = useState(/** @type {{ role: string; text: string }[]} */ ([]));
   const [chatSending, setChatSending] = useState(false);
   const [inputText, setInputText] = useState('');
@@ -126,12 +127,31 @@ function Dashboard() {
   const ppNavActive = location.pathname.startsWith('/personalized-portfolio');
   const goalsNavActive = location.pathname.startsWith('/financial-goals');
   const ragNavActive = location.pathname.startsWith('/rag-contracts');
+  const historyTeachesNavActive = location.pathname.startsWith('/history-teaches');
 
   useEffect(() => {
     const onHash = () => setActiveNavSection(readNavSectionFromHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const wantsFullscreenChat = params.get('chat') === 'fullscreen';
+    if (wantsFullscreenChat) {
+      setChatOpen(true);
+      setChatFullscreen(true);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (!(chatOpen && chatFullscreen)) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [chatOpen, chatFullscreen]);
 
   useEffect(() => {
     chatGreetingReadyRef.current = false;
@@ -793,6 +813,17 @@ function Dashboard() {
               <span className="db-nav-item__sub">RAG-powered contract review</span>
             </span>
           </Link>
+          <Link
+            to="/history-teaches"
+            className={`db-nav-item db-nav-item--rail${historyTeachesNavActive ? ' active' : ''}`}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <BookOpen size={18} aria-hidden />
+            <span className="db-nav-item__text">
+              <span className="db-nav-item__title">History Teaches</span>
+              <span className="db-nav-item__sub">Past crashes, current conflicts</span>
+            </span>
+          </Link>
           <div className="db-sidebar__nav-divider" role="presentation" />
           <Link
             to={getPersonalizedPortfolioResumePath()}
@@ -876,7 +907,16 @@ function Dashboard() {
               )}
             </p>
           </div>
-          <button className="db-ai-btn" onClick={() => setChatOpen(!chatOpen)}>
+          <button
+            className="db-ai-btn"
+            onClick={() =>
+              setChatOpen((open) => {
+                if (open) return false;
+                setChatFullscreen(false);
+                return true;
+              })
+            }
+          >
             <Zap size={16} /> Explain via AI
           </button>
         </header>
@@ -1464,7 +1504,7 @@ function Dashboard() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="db-chat-widget"
+            className={`db-chat-widget${chatFullscreen ? ' db-chat-widget--fullscreen' : ''}`}
             id="ai-explainer"
           >
             <div className="db-chat-header">
@@ -1472,7 +1512,24 @@ function Dashboard() {
                 <span className="db-status-dot"></span>
                 <span>Decode Your Finance Self</span>
               </div>
-              <button onClick={() => setChatOpen(false)} aria-label="Close AI chat"><X size={18} /></button>
+              <div className="db-chat-header-actions">
+                <button
+                  onClick={() => setChatFullscreen((value) => !value)}
+                  aria-label={chatFullscreen ? 'Exit full screen chat' : 'Open full screen chat'}
+                  title={chatFullscreen ? 'Exit full screen' : 'Open full screen'}
+                >
+                  {chatFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+                <button
+                  onClick={() => {
+                    setChatOpen(false);
+                    setChatFullscreen(false);
+                  }}
+                  aria-label="Close AI chat"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             <div className="db-chat-messages">

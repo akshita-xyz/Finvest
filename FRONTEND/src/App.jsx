@@ -13,6 +13,7 @@ import FinancialGoals from './pages/FinancialGoals';
 import RagContracts from './pages/RagContracts';
 import VerifyCertificate from './pages/VerifyCertificate';
 import VoiceAssistant from "./components/VoiceAssistant";
+import HistoryTeaches from './pages/HistoryTeaches';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
       />
       <Route path="/financial-goals" element={<FinancialGoals />} />
       <Route path="/rag-contracts" element={<RagContracts />} />
+      <Route path="/history-teaches" element={<HistoryTeaches />} />
       <Route path="/verify" element={<VerifyCertificate />} />
     </Routes>
     <VoiceAssistant />
